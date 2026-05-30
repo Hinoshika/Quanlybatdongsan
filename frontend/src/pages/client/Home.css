@@ -1,0 +1,107 @@
+/* RESET */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f5f6fa;
+}
+
+/* LAYOUT */
+.layout {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===== NAVBAR ===== */
+.navbar {
+    height: 60px;
+    background: #1f2937;
+    color: white;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 20px;
+}
+
+/* LOGO */
+.logo {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* MENU */
+.menu {
+    list-style: none;
+    display: flex;
+    gap: 25px;
+    margin: 0;
+    padding: 0;
+}
+
+.menu li {
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: 0.2s;
+}
+
+.menu li:hover {
+    background: #374151;
+}
+
+/* RIGHT */
+.right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.right input {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+}
+
+.user {
+    background: #374151;
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+
+/* ===== CONTENT ===== */
+.content {
+    padding: 20px;
+}
+
+/* PROFILE CARD */
+.card.profile {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+/* STATS CARDS */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.card {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    transition: 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
