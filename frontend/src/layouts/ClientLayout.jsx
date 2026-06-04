@@ -93,9 +93,9 @@ export default function ClientLayout() {
                     items={[
                         { key: "", icon: <HomeOutlined />, label: "Trang chủ" },
                         { key: "search", icon: <SearchOutlined />, label: "Tìm kiếm" },
-                        // { key: "request", icon: <FileTextOutlined />, label: "Yêu cầu" },
-                        // { key: "market", icon: <BankOutlined />, label: "Thị trường" },
-                        // { key: "user", icon: <UserOutlined />, label: "Người dùng" }
+                        { key: "request", icon: <FileTextOutlined />, label: "Yêu cầu" },
+                        { key: "market", icon: <BankOutlined />, label: "Thị trường" },
+                        { key: "user", icon: <UserOutlined />, label: "Người dùng" }
                     ]}
                 />
                 {/* 
