@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Button } from "antd";
+import { Button, message } from "antd";
 
 import {
     getThuaDat,
@@ -103,12 +103,25 @@ export default function ThuaDat() {
 
     const handleCreate = async (values) => {
         try {
-            await createThuaDat(values); // API thêm mới
+
+            const res = await createThuaDat(values);
+
+            message.success(
+                res?.message || "Thêm thửa đất thành công"
+            );
 
             setOpenAdd(false);
             fetchData();
+
         } catch (err) {
-            console.log(err);
+
+            message.error(
+                err.response?.data?.message ||
+                err.message ||
+                "Có lỗi xảy ra"
+            );
+
+            console.error(err);
         }
     };
 

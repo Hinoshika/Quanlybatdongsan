@@ -9,7 +9,8 @@ import DetailModal from "./DetailModal";
 
 import {
     searchByCCCD,
-    searchByMap
+    searchByMap,
+    searchByAddress
 } from "../../../services/thuaDat.service";
 
 import {
@@ -25,6 +26,7 @@ export default function SearchPage() {
     const [searchMode, setSearchMode] = useState("cccd");
     const [cccd, setCccd] = useState("");
     const [loading, setLoading] = useState(false);
+    const [address, setAddress] = useState("");
 
     // Data
     const [tableData, setTableData] = useState([]);
@@ -45,7 +47,8 @@ export default function SearchPage() {
         setConstructionData([]);
         setConstructionGeoData([]);
         setCccd("");
-    }, [activeMainTab]);
+        setAddress("");
+    }, [activeMainTab, searchMode]);
 
     // ====================== THỬA ĐẤT ======================
     const searchLandCCCD = async () => {
@@ -73,6 +76,29 @@ export default function SearchPage() {
         setLoading(true);
         try {
             const list = await searchByMap(lat, lng);     // ← Giữ nguyên tên import
+            setTableData(Array.isArray(list) ? list : []);
+            setGeoData(Array.isArray(list) ? list.filter(i => i.geom) : []);
+        } catch (err) {
+            console.error(err);
+            message.error(err.message || "Lỗi tìm kiếm");
+            setTableData([]);
+            setGeoData([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const searchLandAddress = async () => {
+        if (!address.trim()) {
+            message.warning("Nhập địa chỉ");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const list = await searchByAddress(address);
+
             setTableData(Array.isArray(list) ? list : []);
             setGeoData(Array.isArray(list) ? list.filter(i => i.geom) : []);
         } catch (err) {
@@ -137,10 +163,16 @@ export default function SearchPage() {
     const currentGeoData = activeMainTab === "thuadat" ? geoData : constructionGeoData;
 
     const handleSearch = () => {
-        if (activeMainTab === "thuadat") {
-            searchLandCCCD();
-        } else {
-            handleSearchCongTrinhCCCD();
+        if (searchMode === "cccd") {
+            if (activeMainTab === "thuadat") {
+                searchLandCCCD();
+            } else {
+                handleSearchCongTrinhCCCD();
+            }
+        }
+
+        if (searchMode === "address") {
+            searchLandAddress();
         }
     };
 
@@ -164,6 +196,8 @@ export default function SearchPage() {
                 setSearchMode={setSearchMode}
                 cccd={cccd}
                 setCccd={setCccd}
+                address={address}
+                setAddress={setAddress}
                 handleSearch={handleSearch}
                 loading={loading}
             />

@@ -6,6 +6,7 @@ import AdminLayout from "../layouts/AdminLayout";
 import Home from "../pages/client/Home";
 import Profile from "../pages/client/profile/Profile";
 import SearchPage from "../pages/client/search/SearchPage";
+import RequestPage from "../pages/client/request/RequestPage";
 
 import Dashboard from "../pages/admin/Dashboard";
 import ThuaDat from "../pages/admin/thuadat/ThuaDat";
@@ -14,6 +15,7 @@ import CongTrinh from "../pages/admin/congtrinh/CongTrinh";
 import ChuSoHuu from "../pages/admin/chusohuu/ChuSoHuu";
 import User from "../pages/admin/user/User";
 import BienDong from "../pages/admin/biendong/BienDong";
+import XuLyYeuCau from "../pages/admin/yeucau/XuLyYeuCau";
 
 export default function AppRoutes() {
 
@@ -26,6 +28,7 @@ export default function AppRoutes() {
                     <Route index element={<Home />} />
                     <Route path="profile" element={<Profile />} />
                     <Route path="search" element={<SearchPage />} />
+                    <Route path="request" element={<RequestPage />} />
                 </Route>
 
                 {/* ADMIN */}
@@ -44,6 +47,8 @@ export default function AppRoutes() {
                     <Route path="users" element={<User />} />
 
                     <Route path="bien-dong" element={<BienDong />} />
+
+                    <Route path="xu-ly-yeu-cau" element={<XuLyYeuCau />} />
 
                 </Route>
 

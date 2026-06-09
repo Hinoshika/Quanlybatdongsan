@@ -23,9 +23,18 @@ const ThuaDatController = {
     create: async (req, res) => {
         try {
             await ThuaDatService.create(req.body);
-            res.json({ message: "Created" });
+
+            res.json({
+                success: true,
+                message: "Thêm thửa đất thành công"
+            });
+
         } catch (err) {
-            res.status(500).json({ message: err.message });
+
+            res.status(400).json({
+                success: false,
+                message: err.message
+            });
         }
     },
 

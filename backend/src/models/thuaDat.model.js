@@ -411,6 +411,41 @@ const ThuaDatModel = {
 
         return result.rows;
     },
+    // ================= CHECK OVERLAP =================
+    checkOverlap: async (polygon, excludeId = null) => {
+
+        const coords = polygon.map(p => [p[1], p[0]]);
+        coords.push(coords[0]);
+
+        const geojson = {
+            type: "Polygon",
+            coordinates: [coords]
+        };
+
+        let sql = `
+        SELECT id, so_thua, so_to_ban_do
+        FROM thua_dat
+        WHERE deleted_at IS NULL
+        AND ST_Intersects(
+            geom,
+            ST_GeomFromGeoJSON($1)
+        )
+        AND NOT ST_Touches(
+            geom,
+            ST_GeomFromGeoJSON($1)
+        )
+    `;
+
+        const params = [JSON.stringify(geojson)];
+
+        if (excludeId) {
+            sql += ` AND id <> $2`;
+            params.push(excludeId);
+        }
+
+        const result = await db.query(sql, params);
+        return result.rows;
+    },
 };
 
 module.exports = ThuaDatModel;

@@ -249,3 +249,15 @@ export const createCongTrinh =
 
         return handleResponse(res);
     };
+
+// ================= SEARCH BY ADDRESS =================
+export const searchByAddress = async (address) => {
+
+    const res = await fetch(
+        `${API_URL}/search/address?q=${encodeURIComponent(address)}`
+    );
+
+    const data = await handleResponse(res);
+
+    return formatListResponse(data);
+};

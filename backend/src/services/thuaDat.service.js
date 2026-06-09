@@ -33,7 +33,33 @@ const ThuaDatService = {
     },
 
     create: async (data) => {
-        return ThuaDatModel.create(data);
+
+        if (data.polygon?.length >= 3) {
+
+            const overlaps =
+                await ThuaDatModel.checkOverlap(
+                    data.polygon
+                );
+
+            if (overlaps.length > 0) {
+
+                const ds = overlaps
+                    .map(x =>
+                        `Thửa ${x.so_thua}/Tờ ${x.so_to_ban_do}`
+                    )
+                    .join(", ");
+
+                const error = new Error(
+                    `Tọa độ bị chồng lấn với thửa đất: ${ds}`
+                );
+
+                error.status = 400;
+
+                throw error;
+            }
+        }
+
+        return await ThuaDatModel.create(data);
     },
 
     update: async (id, data) => {

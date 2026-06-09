@@ -1,114 +1,158 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Outlet } from "react-router-dom";
-
+import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import {
-    FaBuilding,
-    FaChartBar,
-    FaUser,
-    FaHome,
-    FaBars,
-    FaHistory
+    FaBuilding, FaChartBar, FaUser, FaHome,
+    FaHistory, FaClipboardCheck, FaUsers, FaSignOutAlt,
+    FaCog, FaMapMarkerAlt, FaChevronLeft
 } from "react-icons/fa";
 
-export default function AdminLayout() {
+import "./AdminLayout.css";
 
+export default function AdminLayout() {
     const [collapsed, setCollapsed] = useState(false);
     const navigate = useNavigate();
-    const role = localStorage.getItem("role");
-    const fullName = localStorage.getItem("full_name");
+    const location = useLocation();
+
+    const role = localStorage.getItem("role") || "admin";
+    const fullName = localStorage.getItem("full_name") || "Admin";
 
     const handleLogout = () => {
         localStorage.clear();
         navigate("/");
     };
 
-    const menuItems = [
-        { icon: <FaChartBar />, label: "Dashboard", path: "/admin" },
-        { icon: <FaHome />, label: "Thửa đất", path: "/admin/thua-dat" },
-        { icon: <FaBuilding />, label: "Công trình", path: "/admin/cong-trinh" },
-        { icon: <FaUser />, label: "Chủ sở hữu", path: "/admin/chu-so-huu" },
+    const menuGroups = [
+        {
+            title: "Tổng quan",
+            items: [
+                { icon: <FaChartBar />, label: "Dashboard", path: "/admin", exact: true }
+            ]
+        },
+        {
+            title: "Quản lý dữ liệu",
+            items: [
+                { icon: <FaHome />, label: "Thửa đất", path: "/admin/thua-dat" },
+                { icon: <FaBuilding />, label: "Công trình", path: "/admin/cong-trinh" },
+                { icon: <FaUser />, label: "Chủ sở hữu", path: "/admin/chu-so-huu" },
+            ]
+        },
+        {
+            title: "Nghiệp vụ",
+            items: [
+                { icon: <FaClipboardCheck />, label: "Xử lý yêu cầu", path: "/admin/xu-ly-yeu-cau" },
+                { icon: <FaHistory />, label: "Lịch sử biến động", path: "/admin/bien-dong" },
+            ]
+        },
+        {
+            title: "Hệ thống",
+            items: [
+                { icon: <FaUsers />, label: "Người dùng", path: "/admin/users" },
+                { icon: <FaCog />, label: "Cài đặt", path: "/admin/settings" },
+            ],
+            roles: ["admin"]
+        }
     ];
 
-    const adminItems = [
-        { icon: <FaHistory />, label: "Biến động", path: "/admin/bien-dong" },
-        { icon: <span>👥</span>, label: "Người dùng", path: "/admin/users" },
-    ];
+    const checkActive = (item) => {
+        if (item.exact) return location.pathname === item.path;
+        return location.pathname.startsWith(item.path);
+    };
+
+    const currentPage = menuGroups
+        .flatMap(g => g.items)
+        .find(i => checkActive(i))?.label || "Dashboard";
 
     return (
-        <div style={{ display: "flex", height: "100vh" }}>
+        <div className="admin-wrapper">
+
             {/* SIDEBAR */}
-            <div style={{
-                width: collapsed ? "80px" : "260px",
-                backgroundColor: "#1e293b",
-                color: "white",
-                display: "flex",
-                flexDirection: "column",
-                transition: "width 0.3s",
-                overflow: "hidden"
-            }}>
-                <div style={{
-                    height: "70px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: collapsed ? "center" : "flex-start",
-                    padding: "0 20px",
-                    borderBottom: "1px solid rgba(255,255,255,0.1)",
-                    cursor: "pointer"
-                }} onClick={() => setCollapsed(!collapsed)}>
-                    <FaBars style={{ fontSize: "1.5rem", minWidth: "24px" }} />
-                    {!collapsed && <span style={{ marginLeft: "15px", fontSize: "1.2rem", fontWeight: "bold" }}>QL Nhà Đất</span>}
-                </div>
+            <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
 
-                <ul style={{ listStyle: "none", padding: "20px 10px" }}>
-                    {[...menuItems, ...(role === "admin" ? adminItems : [])].map((item, index) => (
-                        <li key={index} onClick={() => navigate(item.path)} style={{
-                            display: "flex",
-                            alignItems: "center",
-                            padding: "12px 15px",
-                            marginBottom: "8px",
-                            borderRadius: "8px",
-                            cursor: "pointer",
-                            color: "#cbd5e1",
-                            justifyContent: collapsed ? "center" : "flex-start",
-                            transition: "background 0.2s"
-                        }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#334155"}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}>
-                            <span style={{ minWidth: "20px", display: "flex" }}>{item.icon}</span>
-                            {!collapsed && <span style={{ marginLeft: "15px" }}>{item.label}</span>}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-
-            {/* CONTENT */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", backgroundColor: "#f1f5f9", overflow: "hidden" }}>
-                <div style={{
-                    height: "70px",
-                    backgroundColor: "white",
-                    borderBottom: "1px solid #e2e8f0",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    padding: "0 30px",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-                }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-                        <span style={{ fontWeight: "600" }}>👤 {fullName}</span>
-                        <button onClick={handleLogout} style={{
-                            backgroundColor: "transparent",
-                            border: "1px solid #e2e8f0",
-                            padding: "8px 16px",
-                            borderRadius: "6px",
-                            cursor: "pointer"
-                        }}>Đăng xuất</button>
+                {/* LOGO */}
+                <div className="logo-section">
+                    <div className="logo-icon">
+                        <FaMapMarkerAlt />
                     </div>
+                    {!collapsed && (
+                        <div className="logo-text">
+                            <div className="logo-title">LandManager</div>
+                            <div className="logo-subtitle">Quản lý đất đai</div>
+                        </div>
+                    )}
                 </div>
 
-                <div style={{ flex: 1, padding: "30px", overflowY: "auto" }}>
+                {/* TOGGLE BUTTON */}
+                <button
+                    className="collapse-btn"
+                    onClick={() => setCollapsed(!collapsed)}
+                    title={collapsed ? "Mở rộng" : "Thu gọn"}
+                >
+                    <FaChevronLeft className={`chevron ${collapsed ? "rotate" : ""}`} />
+                </button>
+
+                {/* MENU */}
+                <nav className="nav-section">
+                    {menuGroups.map((group, idx) => {
+                        if (group.roles && !group.roles.includes(role)) return null;
+
+                        return (
+                            <div key={idx} className="menu-group">
+                                {!collapsed && (
+                                    <div className="group-title">{group.title}</div>
+                                )}
+
+                                {group.items.map((item, i) => {
+                                    const active = checkActive(item);
+
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`menu-item ${active ? "active" : ""}`}
+                                            onClick={() => navigate(item.path)}
+                                        >
+                                            <span className="icon">{item.icon}</span>
+                                            {!collapsed && (
+                                                <span className="label">{item.label}</span>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })}
+                </nav>
+
+                {/* USER */}
+                <div className="user-profile">
+                    <div className="avatar">
+                        {fullName.charAt(0).toUpperCase()}
+                    </div>
+                    {!collapsed && (
+                        <div className="user-info">
+                            <div className="user-name">{fullName}</div>
+                            <div className="user-role">{role}</div>
+                        </div>
+                    )}
+                </div>
+            </aside>
+
+            {/* MAIN */}
+            <main className="main">
+                {/* HEADER */}
+                <header className="header">
+                    <h1 className="page-title">{currentPage}</h1>
+
+                    <button className="logout-btn" onClick={handleLogout}>
+                        <FaSignOutAlt />
+                        <span>Đăng xuất</span>
+                    </button>
+                </header>
+
+                {/* CONTENT */}
+                <div className="content">
                     <Outlet />
                 </div>
-            </div>
+            </main>
         </div>
     );
 }
