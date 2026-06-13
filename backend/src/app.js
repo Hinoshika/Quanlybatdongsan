@@ -9,6 +9,7 @@ const chuSoHuuRoutes = require("./routes/chu_so_huu.route");
 const bienDongRoutes = require("./routes/bienDong.router");
 const soHuuThuaDatRoutes = require("./routes/soHuuThuaDat.route");
 const soHuuCongTrinhRoutes = require("./routes/soHuuCongTrinh.route");
+const yeuCauRoutes = require("./routes/yeuCau.routes");
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use("/api/chu-so-huu", chuSoHuuRoutes);
 app.use("/api/bien-dong", bienDongRoutes);
 app.use("/api/so-huu-thua-dat", soHuuThuaDatRoutes);
 app.use("/api/so-huu-cong-trinh", soHuuCongTrinhRoutes);
+app.use("/api/yeu-cau", yeuCauRoutes);
 
 // =====================
 // HEALTH CHECK

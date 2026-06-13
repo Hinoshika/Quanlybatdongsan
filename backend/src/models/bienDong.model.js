@@ -4,7 +4,7 @@ const BienDongModel = {
 
     // ================= GET ALL =================
     getAll: async (filters = {}) => {
-        console.log("FILTERS:", filters);
+        // console.log("FILTERS:", filters);
         let baseQuery = `
         SELECT
             bd.*,

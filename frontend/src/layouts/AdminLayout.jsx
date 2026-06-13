@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import {
     FaBuilding, FaChartBar, FaUser, FaHome,
@@ -7,6 +7,8 @@ import {
 } from "react-icons/fa";
 
 import "./AdminLayout.css";
+import axios from "axios";
+
 
 export default function AdminLayout() {
     const [collapsed, setCollapsed] = useState(false);
@@ -19,6 +21,27 @@ export default function AdminLayout() {
     const handleLogout = () => {
         localStorage.clear();
         navigate("/");
+    };
+    const [pendingCount, setPendingCount] = useState(0);
+
+    useEffect(() => {
+        fetchPendingCount();
+    }, []);
+
+    const fetchPendingCount = async () => {
+        try {
+            const res = await axios.get(
+                "http://localhost:5000/api/yeu-cau"
+            );
+
+            const count = res.data.filter(
+                item => item.trang_thai === "CHO_XU_LY"
+            ).length;
+
+            setPendingCount(count);
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     const menuGroups = [
@@ -39,7 +62,12 @@ export default function AdminLayout() {
         {
             title: "Nghiệp vụ",
             items: [
-                { icon: <FaClipboardCheck />, label: "Xử lý yêu cầu", path: "/admin/xu-ly-yeu-cau" },
+                {
+                    icon: <FaClipboardCheck />,
+                    label: "Xử lý yêu cầu",
+                    badge: pendingCount,
+                    path: "/admin/xu-ly-yeu-cau"
+                },
                 { icon: <FaHistory />, label: "Lịch sử biến động", path: "/admin/bien-dong" },
             ]
         },
@@ -110,9 +138,22 @@ export default function AdminLayout() {
                                             className={`menu-item ${active ? "active" : ""}`}
                                             onClick={() => navigate(item.path)}
                                         >
-                                            <span className="icon">{item.icon}</span>
+                                            <span className="icon">
+                                                {item.icon}
+                                            </span>
+
                                             {!collapsed && (
-                                                <span className="label">{item.label}</span>
+                                                <div className="menu-label-wrapper">
+                                                    <span className="label">
+                                                        {item.label}
+                                                    </span>
+
+                                                    {item.badge > 0 && (
+                                                        <span className="menu-notification">
+                                                            {item.badge}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     );

@@ -7,7 +7,7 @@ const BienDongController = {
 
         try {
 
-            console.log("REQ QUERY:", req.query);
+            // console.log("REQ QUERY:", req.query);
 
             const data =
                 await BienDongService.getAllBienDong(req.query);

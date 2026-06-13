@@ -253,3 +253,14 @@
     padding: 24px 28px;
     overflow-y: auto;
 }
+
+.menu-notification {
+    color: #da0c0c;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-left: auto;
+}
+
+.menu-item.active .menu-notification {
+    color: #f00808;
+}

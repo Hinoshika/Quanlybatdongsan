@@ -1,6 +1,6 @@
-const { Client } = require("pg");
+const { Pool } = require("pg");
 
-const client = new Client({
+const pool = new Pool({
     user: "postgres",
     host: "localhost",
     database: "QLD",
@@ -8,8 +8,6 @@ const client = new Client({
     port: 5432,
 });
 
-client.connect()
-    .then(() => console.log("Kết nối PostgreSQL thành công"))
-    .catch(err => console.log(err));
+console.log("PostgreSQL Pool initialized");
 
-module.exports = client;
+module.exports = pool;

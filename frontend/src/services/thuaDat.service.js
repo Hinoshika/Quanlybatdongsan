@@ -134,13 +134,14 @@ export const getThuaDatById = async (
 
 // ================= SEARCH BY CCCD =================
 export const searchByCCCD = async (cccd) => {
+
     const res = await fetch(
         `${API_URL}/cccd/${cccd}`
     );
 
     const data = await handleResponse(res);
 
-    return data.data || [];   // ✔ FIX CHÍNH Ở ĐÂY
+    return formatListResponse(data);
 };
 
 // ================= SEARCH BY MAP =================
@@ -260,4 +261,27 @@ export const searchByAddress = async (address) => {
     const data = await handleResponse(res);
 
     return formatListResponse(data);
+};
+
+// ================= GỘP THỬA =================
+export const mergeThuaDat = async (payload) => {
+
+    if (!payload?.thua_ids || payload.thua_ids.length < 2) {
+        throw new Error("Phải chọn ít nhất 2 thửa để gộp");
+    }
+
+    const res = await fetch(`${API_URL}/merge`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload),
+    });
+
+    const data = await handleResponse(res);
+
+    return {
+        ...data,
+        data: data?.data ? normalizeThuaDat(data.data) : null
+    };
 };

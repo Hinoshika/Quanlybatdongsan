@@ -1,620 +1,239 @@
 import {
-    Drawer,
-    Form,
-    Button,
-    message,
-    Card,
-    Tag,
-    Row,
-    Col,
-    Table,
-    Modal
+    Drawer, Button, message, Card, Tag, Row, Col, Table, Input, Modal
 } from "antd";
 
-import {
-    useState,
-    useMemo
-} from "react";
+import { useState, useMemo } from "react";
 
 import {
     MapContainer,
     TileLayer,
     Polygon,
     Popup,
-    useMapEvents,
-    Marker
+    useMap
 } from "react-leaflet";
 
+import { searchByCCCD } from "../../../../services/thuaDat.service";
 import "leaflet/dist/leaflet.css";
 
-import {
-    deleteThuaDat
-} from "../../../../services/thuaDat.service";
+// ================= MAP FLY =================
+function MapFlyTo({ target }) {
+    const map = useMap();
 
-import AddThuaDatModal from "./AddThuaDatModal";
-
-// ================= MAP CLICK =================
-
-function MapClickHandler({
-
-    data,
-    setClickedData,
-    setActiveId,
-    setMarker
-
-}) {
-
-    useMapEvents({
-
-        click(e) {
-
-            const { lat, lng } = e.latlng;
-
-            setMarker([lat, lng]);
-
-            // 🔥 tìm gần vị trí click
-
-            const nearby = data.filter(item => {
-
-                const coords =
-                    item.geom?.coordinates?.[0];
-
-                if (!coords) {
-                    return false;
-                }
-
-                // ================= CENTER =================
-
-                let latSum = 0;
-                let lngSum = 0;
-
-                coords.forEach(c => {
-
-                    lngSum += c[0];
-                    latSum += c[1];
-                });
-
-                const centerLat =
-                    latSum / coords.length;
-
-                const centerLng =
-                    lngSum / coords.length;
-
-                // ================= DISTANCE =================
-
-                const distance =
-                    Math.sqrt(
-
-                        Math.pow(
-                            centerLat - lat,
-                            2
-                        ) +
-
-                        Math.pow(
-                            centerLng - lng,
-                            2
-                        )
-                    );
-
-                item.distance = distance;
-
-                return distance < 0.002;
-            });
-
-            nearby.sort(
-                (a, b) =>
-                    a.distance - b.distance
-            );
-
-            setClickedData(nearby);
-
-            if (nearby.length > 0) {
-
-                setActiveId(
-                    nearby[0].id
-                );
-
-            } else {
-
-                setActiveId(null);
-            }
-        }
-    });
+    useMemo(() => {
+        if (target) map.flyTo(target, 17);
+    }, [target, map]);
 
     return null;
 }
 
-// ================= PAGE =================
+// ================= MAIN =================
+export default function GopThuaDrawer({ open, onClose, onSubmit }) {
 
-export default function GopThuaDrawer({
-    open,
-    onClose,
-    data = [],
-    onSubmit
-}) {
+    const [cccd, setCccd] = useState("");
+    const [result, setResult] = useState([]);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [marker, setMarker] = useState(null);
 
-    const [form] = Form.useForm();
+    // ================= SEARCH =================
+    const handleSearch = async () => {
+        if (!cccd.trim()) return message.warning("Nhập CCCD");
 
-    // 🔥 nearby data
-    const [clickedData, setClickedData] =
-        useState([]);
+        try {
+            const res = await searchByCCCD(cccd.trim());
 
-    // 🔥 selected ids
-    const [selectedIds, setSelectedIds] =
-        useState([]);
+            setResult(res || []);
+            setSelectedIds([]);
+            setMarker(null);
 
-    // 🔥 active polygon
-    const [activeId, setActiveId] =
-        useState(null);
-
-    // 🔥 marker
-    const [marker, setMarker] =
-        useState(null);
-
-    // 🔥 modal thêm thửa mới
-    const [openAddModal, setOpenAddModal] =
-        useState(false);
-
-    // ================= SELECTED =================
-
-    const selectedData = useMemo(() => {
-
-        return data.filter(
-            i => selectedIds.includes(i.id)
-        );
-
-    }, [selectedIds, data]);
-
-    // ================= TOTAL =================
-
-    const totalArea = useMemo(() => {
-
-        return selectedData.reduce(
-            (sum, i) =>
-                sum + Number(i.dien_tich || 0),
-            0
-        );
-
-    }, [selectedData]);
-
-    // ================= SELECT ROW =================
-
-    const handleSelectRow = (id) => {
-
-        let newSelected = [];
-
-        if (selectedIds.includes(id)) {
-
-            newSelected =
-                selectedIds.filter(
-                    i => i !== id
-                );
-
-        } else {
-
-            newSelected = [
-                ...selectedIds,
-                id
-            ];
+        } catch {
+            message.error("Lỗi tìm kiếm");
         }
-
-        setSelectedIds(newSelected);
     };
 
-    // ================= GỘP THỬA =================
+    // ================= SELECT =================
+    const handleSelect = (keys) => {
+        setSelectedIds(keys);
 
-    const handleSubmit = async () => {
+        const first = result.find(i => i.id === keys?.[0]);
+        if (!first?.geom?.coordinates?.[0]) return;
 
-        if (selectedIds.length < 2) {
+        const coords = first.geom.coordinates[0];
 
-            message.error(
-                "Chọn ít nhất 2 thửa"
-            );
+        const lat = coords.map(c => c[1]);
+        const lng = coords.map(c => c[0]);
 
-            return;
-        }
+        setMarker([
+            lat.reduce((a, b) => a + b, 0) / lat.length,
+            lng.reduce((a, b) => a + b, 0) / lng.length
+        ]);
+    };
+
+    // ================= VALID MERGE =================
+    const selectedData = useMemo(() =>
+        result.filter(i => selectedIds.includes(i.id)),
+        [result, selectedIds]
+    );
+
+    const totalArea = useMemo(() =>
+        selectedData.reduce((s, i) => s + Number(i.dien_tich || 0), 0),
+        [selectedData]
+    );
+
+    const isValidMerge = selectedData.length >= 2;
+
+    // ================= MERGE =================
+    const handleMerge = () => {
+        if (!isValidMerge)
+            return message.error("Chọn ít nhất 2 thửa");
 
         Modal.confirm({
-
-            title: "Xác nhận gộp thửa",
-
-            content:
-                "Sau khi gộp sẽ xoá các thửa cũ và tạo thửa mới.",
-
-            okText: "Gộp thửa",
-
-            cancelText: "Huỷ",
+            title: "Gộp thửa",
+            content: "Tạo thửa mới từ các thửa đã chọn",
 
             async onOk() {
+                await onSubmit({
+                    type: "MERGE",
+                    thua_ids: selectedIds
+                });
 
-                try {
+                message.success("Gộp thành công");
 
-                    // 🔥 xoá các thửa cũ
-
-                    await Promise.all(
-
-                        selectedIds.map(id =>
-                            deleteThuaDat(id)
-                        )
-                    );
-
-                    message.success(
-                        "Đã xoá các thửa cũ"
-                    );
-
-                    // 🔥 mở modal thêm thửa mới
-
-                    setOpenAddModal(true);
-
-                } catch (err) {
-
-                    console.error(err);
-
-                    message.error(
-                        "Gộp thửa thất bại"
-                    );
-                }
+                setResult([]);
+                setSelectedIds([]);
+                setCccd("");
+                onClose();
             }
         });
     };
 
-    // ================= ADD NEW =================
+    // ================= COLUMNS =================
+    const columns = [
+        { title: "Số thửa", dataIndex: "so_thua", width: 100 },
+        { title: "Số tờ", dataIndex: "so_to_ban_do", width: 100 },
+        { title: "Địa chỉ", dataIndex: "dia_chi", width: 220, ellipsis: true },
+        { title: "Tỉnh", dataIndex: "tinh", width: 120 },
+        { title: "Diện tích", dataIndex: "dien_tich", width: 120 },
+        { title: "Loại đất", dataIndex: "loai_dat", width: 140 },
+        { title: "Mục đích", dataIndex: "muc_dich_su_dung", width: 160 },
+        { title: "Hình thức", dataIndex: "hinh_thuc_su_dung", width: 170 },
+        { title: "Thời hạn", dataIndex: "thoi_han_su_dung", width: 150 },
+        { title: "Nguồn gốc", dataIndex: "nguon_goc_su_dung", width: 170 },
 
-    const handleCreateNew = async (values) => {
+        {
+            title: "Trạng thái",
+            dataIndex: "trang_thai",
+            width: 140,
+            render: (v) => {
+                let color = "green";
+                if (v === "thế_chấp") color = "orange";
+                if (v === "tranh_chấp") color = "red";
+                if (v === "dang_su_dung") color = "blue";
 
-        try {
-
-            // 🔥 callback tạo thửa mới
-
-            await onSubmit(values);
-
-            message.success(
-                "Tạo thửa mới thành công"
-            );
-
-            setOpenAddModal(false);
-
-            setClickedData([]);
-            setSelectedIds([]);
-            setActiveId(null);
-            setMarker(null);
-
-            form.resetFields();
-
-            onClose();
-
-        } catch (err) {
-
-            console.error(err);
-
-            message.error(
-                "Tạo thửa mới thất bại"
-            );
-        }
-    };
-
-    // ================= UI =================
+                return <Tag color={color}>{v}</Tag>;
+            }
+        },
+    ];
 
     return (
+        <Drawer
+            title="🔗 Gộp thửa đất"
+            width={1400}
+            open={open}
+            onClose={onClose}
+        >
 
-        <>
-            <Drawer
-                title="🔗 Gộp thửa đất"
+            <Row gutter={16}>
 
-                placement="right"
+                {/* ================= LEFT ================= */}
+                <Col span={16}>
+                    <Card>
 
-                width={1450}
+                        <Input
+                            placeholder="Nhập CCCD"
+                            value={cccd}
+                            onChange={e => setCccd(e.target.value)}
+                        />
 
-                open={open}
-
-                destroyOnClose
-
-                onClose={() => {
-
-                    setClickedData([]);
-                    setSelectedIds([]);
-                    setActiveId(null);
-                    setMarker(null);
-
-                    form.resetFields();
-
-                    onClose();
-                }}
-            >
-
-                <Row gutter={16}>
-
-                    {/* ================= MAP ================= */}
-
-                    <Col span={15}>
-
-                        <Card
-                            title="🗺️ Click gần vị trí thửa đất"
-                            size="small"
+                        <Button
+                            type="primary"
+                            block
+                            style={{ marginTop: 8 }}
+                            onClick={handleSearch}
                         >
+                            Tìm kiếm
+                        </Button>
 
-                            <MapContainer
-                                center={[
-                                    21.0285,
-                                    105.8542
-                                ]}
+                        {/* ================= STATS ================= */}
+                        <div style={{ marginTop: 12 }}>
+                            <Tag>Chọn: {selectedIds.length}</Tag>
+                            <Tag color="blue">DT: {totalArea} m²</Tag>
+                            {/* <Tag color={isValidMerge ? "green" : "red"}>
+                                {isValidMerge ? "OK" : "INVALID"}
+                            </Tag> */}
+                        </div>
 
-                                zoom={15}
-
-                                style={{
-                                    height: 820,
-                                    width: "100%",
-                                    borderRadius: 8
-                                }}
-                            >
-
-                                {/* TILE */}
-
-                                <TileLayer
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                />
-
-                                {/* CLICK MAP */}
-
-                                <MapClickHandler
-
-                                    data={data}
-
-                                    setClickedData={
-                                        setClickedData
-                                    }
-
-                                    setActiveId={
-                                        setActiveId
-                                    }
-
-                                    setMarker={
-                                        setMarker
-                                    }
-                                />
-
-                                {/* MARKER */}
-
-                                {
-                                    marker && (
-
-                                        <Marker
-                                            position={marker}
-                                        />
-                                    )
-                                }
-
-                                {/* POLYGON */}
-
-                                {
-                                    data.map(item => {
-
-                                        const coords =
-                                            item.geom?.coordinates?.[0];
-
-                                        if (!coords) {
-                                            return null;
-                                        }
-
-                                        const positions =
-                                            coords.map(c => [
-                                                c[1],
-                                                c[0]
-                                            ]);
-
-                                        const isSelected =
-                                            selectedIds.includes(item.id);
-
-                                        const isActive =
-                                            activeId === item.id;
-
-                                        return (
-
-                                            <Polygon
-                                                key={item.id}
-
-                                                positions={positions}
-
-                                                pathOptions={{
-
-                                                    color:
-                                                        isSelected
-                                                            ? "#ff4d4f"
-                                                            : isActive
-                                                                ? "#fa8c16"
-                                                                : "#1677ff",
-
-                                                    fillColor:
-                                                        isSelected
-                                                            ? "#ffccc7"
-                                                            : "#69b1ff",
-
-                                                    fillOpacity:
-                                                        isSelected
-                                                            ? 0.7
-                                                            : 0.4,
-
-                                                    weight:
-                                                        isActive
-                                                            ? 5
-                                                            : 2
-                                                }}
-                                            >
-
-                                                <Popup>
-
-                                                    <div
-                                                        style={{
-                                                            minWidth: 220
-                                                        }}
-                                                    >
-
-                                                        <h4>
-                                                            🏠 Thửa đất
-                                                        </h4>
-
-                                                        <p>
-                                                            <b>Thửa:</b>{" "}
-                                                            {item.so_thua}
-                                                        </p>
-
-                                                        <p>
-                                                            <b>Tờ:</b>{" "}
-                                                            {item.so_to_ban_do}
-                                                        </p>
-
-                                                        <p>
-                                                            <b>Diện tích:</b>{" "}
-                                                            {item.dien_tich} m²
-                                                        </p>
-
-                                                        <p>
-                                                            <b>Địa chỉ:</b>{" "}
-                                                            {item.dia_chi}
-                                                        </p>
-
-                                                    </div>
-
-                                                </Popup>
-
-                                            </Polygon>
-                                        );
-                                    })
-                                }
-
-                            </MapContainer>
-
-                        </Card>
-
-                    </Col>
-
-                    {/* ================= RIGHT ================= */}
-
-                    <Col span={9}>
-
-                        <Card
-                            title="📋 Thửa đất gần vị trí click"
-                            size="small"
+                        <Button
+                            danger
+                            block
+                            style={{ marginTop: 12 }}
+                            onClick={handleMerge}
                         >
+                            🔗 Gộp thửa
+                        </Button>
 
-                            {/* INFO */}
+                        {/* ================= TABLE ================= */}
+                        <Table
+                            rowKey="id"
+                            size="small"
+                            dataSource={result}   // ✅ dùng trực tiếp backend trả về
+                            columns={columns}
+                            pagination={false}
+                            scroll={{ x: 2600, y: 420 }}
+                            rowSelection={{
+                                selectedRowKeys: selectedIds,
+                                onChange: handleSelect
+                            }}
+                        />
+                    </Card>
+                </Col>
 
-                            <div
-                                style={{
-                                    marginBottom: 12
-                                }}
-                            >
+                {/* ================= MAP ================= */}
+                <Col span={8}>
+                    <Card title="🗺️ Map" bodyStyle={{ padding: 0 }}>
+                        <MapContainer
+                            center={[21.0285, 105.8542]}
+                            zoom={15}
+                            style={{ height: 650 }}
+                        >
+                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-                                <Tag color="blue">
-                                    Đã chọn:
-                                    {" "}
-                                    {selectedIds.length}
-                                </Tag>
+                            <MapFlyTo target={marker} />
 
-                                <Tag color="green">
-                                    Tổng DT:
-                                    {" "}
-                                    {totalArea} m²
-                                </Tag>
+                            {selectedData.map(item => {
+                                const coords = item.geom?.coordinates?.[0];
+                                if (!coords) return null;
 
-                            </div>
+                                const positions = coords.map(c => [c[1], c[0]]);
 
-                            {/* TABLE */}
+                                return (
+                                    <Polygon
+                                        key={item.id}
+                                        positions={positions}
+                                        pathOptions={{ color: "red", fillOpacity: 0.4 }}
+                                    >
+                                        <Popup>
+                                            <b>{item.so_thua}</b>
+                                            <br />
+                                            {item.dia_chi}
+                                        </Popup>
+                                    </Polygon>
+                                );
+                            })}
+                        </MapContainer>
+                    </Card>
+                </Col>
 
-                            <Table
-                                size="small"
-
-                                rowKey="id"
-
-                                pagination={false}
-
-                                scroll={{
-                                    y: 620
-                                }}
-
-                                dataSource={clickedData}
-
-                                rowSelection={{
-
-                                    selectedRowKeys:
-                                        selectedIds,
-
-                                    onChange: keys => {
-                                        setSelectedIds(keys);
-                                    }
-                                }}
-
-                                onRow={(record) => ({
-
-                                    onClick: () => {
-
-                                        handleSelectRow(
-                                            record.id
-                                        );
-                                    }
-                                })}
-
-                                columns={[
-
-                                    {
-                                        title: "Thửa",
-                                        dataIndex: "so_thua",
-                                        width: 80
-                                    },
-
-                                    {
-                                        title: "Tờ",
-                                        dataIndex: "so_to_ban_do",
-                                        width: 80
-                                    },
-
-                                    {
-                                        title: "Diện tích",
-                                        dataIndex: "dien_tich",
-
-                                        render: v =>
-                                            `${v} m²`
-                                    },
-                                ]}
-                            />
-
-                            {/* BUTTON */}
-
-                            <Button
-                                type="primary"
-
-                                danger
-
-                                block
-
-                                style={{
-                                    marginTop: 16
-                                }}
-
-                                onClick={handleSubmit}
-                            >
-                                🔗 Gộp thửa
-                            </Button>
-
-                        </Card>
-
-                    </Col>
-
-                </Row>
-
-            </Drawer>
-
-            {/* ================= MODAL THỬA MỚI ================= */}
-
-            <AddThuaDatModal
-                open={openAddModal}
-
-                onClose={() =>
-                    setOpenAddModal(false)
-                }
-
-                onSubmit={handleCreateNew}
-            />
-        </>
+            </Row>
+        </Drawer>
     );
 }
