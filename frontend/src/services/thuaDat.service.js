@@ -26,33 +26,41 @@ const normalizeThuaDat = (item) => ({
 
     ...item,
 
-    geom:
-        item.geom
-            ? (
-                typeof item.geom === "string"
-                    ? JSON.parse(item.geom)
-                    : item.geom
-            )
-            : null,
+    geom: (() => {
+        const g = item.geom;
 
-    lat:
-        item.lat != null
-            ? Number(item.lat)
-            : null,
+        if (!g) return null;
 
-    lng:
-        item.lng != null
-            ? Number(item.lng)
-            : null,
+        if (typeof g === "object") return g;
 
-    chu_so_huu:
-        item.chu_so_huu
-            ? (
-                typeof item.chu_so_huu === "string"
-                    ? JSON.parse(item.chu_so_huu)
-                    : item.chu_so_huu
-            )
-            : []
+        if (typeof g !== "string") return null;
+
+        // 🔥 CHẶN TRƯỜNG HỢP NUMBER STRING
+        if (!isNaN(g)) return null;
+
+        try {
+            return JSON.parse(g);
+        } catch (e) {
+            return null;
+        }
+    })(),
+
+    lat: item.lat != null ? Number(item.lat) : null,
+    lng: item.lng != null ? Number(item.lng) : null,
+
+    chu_so_huu: (() => {
+        const c = item.chu_so_huu;
+
+        if (!c) return [];
+
+        if (typeof c === "object") return c;
+
+        try {
+            return JSON.parse(c);
+        } catch {
+            return [];
+        }
+    })()
 });
 
 // ================= FORMAT RESPONSE =================
@@ -284,4 +292,20 @@ export const mergeThuaDat = async (payload) => {
         ...data,
         data: data?.data ? normalizeThuaDat(data.data) : null
     };
+
+};
+export const tachThuaDat = async (payload) => {
+
+    const res = await fetch(
+        `${API_URL}/tach`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        }
+    );
+
+    return handleResponse(res);
 };

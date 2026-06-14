@@ -123,7 +123,7 @@ export default function BienDong() {
     return (
         <div style={{ padding: 16 }}>
 
-            <h2>📊 Quản lý biến động</h2>
+            <h2>📊 Danh sách biến động</h2>
 
             {/* FILTER */}
             <Row gutter={12} style={{ marginBottom: 16 }}>

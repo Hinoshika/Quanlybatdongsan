@@ -1,711 +1,422 @@
-import {
-    useState,
-    useEffect
-} from "react";
-
-import {
-    Drawer,
-    Card,
-    Row,
-    Col,
-    Table,
-    Button,
-    Tag,
-    Form,
-    InputNumber,
-    message
-} from "antd";
-
-import {
-    MapContainer,
-    TileLayer,
-    Polygon,
-    Popup,
-    useMapEvents,
-    Marker
-} from "react-leaflet";
-
+import { useState } from "react";
+import { Drawer, Card, Table, Input, Button, Tag, Form, InputNumber, message, Row, Col } from "antd";
+import { MapContainer, TileLayer, Polygon, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-
-import {
-    searchByMap,
-    deleteThuaDat
-} from "../../../../services/thuaDat.service";
-
-import AddThuaDatModal
-    from "./AddThuaDatModal";
-
-// ================= CLICK MAP =================
-
-function MapClickHandler({
-
-    setClickedData,
-    setMarker,
-    setLoading
-
-}) {
-
-    useMapEvents({
-
-        async click(e) {
-
-            const { lat, lng } =
-                e.latlng;
-
-            setMarker([
-                lat,
-                lng
-            ]);
-
-            setLoading(true);
-
-            try {
-
-                const result =
-                    await searchByMap(
-                        lat,
-                        lng,
-                        50
-                    );
-
-                const nearby =
-                    Array.isArray(result)
-                        ? result
-                        : result?.data || [];
-
-                setClickedData(
-                    nearby
-                );
-
-            } catch (err) {
-
-                console.error(err);
-
-                message.error(
-                    "Không tìm thấy thửa đất"
-                );
-
-            } finally {
-
-                setLoading(false);
-            }
-        }
-    });
-
+import { searchByCCCD, deleteThuaDat } from "../../../../services/thuaDat.service";
+import { useWatch } from "antd/es/form/Form";
+// ================= FLY TO =================
+function FlyToPolygon({ item }) {
+    const map = useMap();
+    if (item?.geom?.coordinates?.[0]) {
+        const coords = item.geom.coordinates[0].map(c => [c[1], c[0]]);
+        const lat = coords.map(c => c[0]);
+        const lng = coords.map(c => c[1]);
+        const center = [
+            lat.reduce((a, b) => a + b, 0) / lat.length,
+            lng.reduce((a, b) => a + b, 0) / lng.length
+        ];
+        map.flyTo(center, 17);
+    }
     return null;
 }
-
-// ================= COMPONENT =================
-
-export default function TachThuaDrawer({
-
-    open,
-    onClose,
-    data = [],
-    onSubmit
-
-}) {
-
+// ================= MAIN =================
+export default function TachThuaDrawer({ open, onClose, onSubmit }) {
     const [form] = Form.useForm();
-
-    // ================= STATE =================
-
-    const [marker, setMarker] =
-        useState(null);
-
-    const [loading, setLoading] =
-        useState(false);
-
-    const [clickedData, setClickedData] =
-        useState([]);
-
-    const [selectedItem, setSelectedItem] =
-        useState(null);
-
-    // ================= ADD MODAL =================
-
-    const [openAdd, setOpenAdd] =
-        useState(false);
-
-    const [addQueue, setAddQueue] =
-        useState([]);
-
-    const [currentAdd, setCurrentAdd] =
-        useState(null);
-
-    // ================= CHỌN THỬA =================
-
+    const [cccd, setCccd] = useState("");
+    const [result, setResult] = useState([]);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [splitPolygons, setSplitPolygons] = useState([]);
+    // ================= SEARCH =================
+    const handleSearch = async () => {
+        if (!cccd.trim()) {
+            return message.warning("Nhập CCCD");
+        }
+        try {
+            const res = await searchByCCCD(cccd.trim());
+            setResult(res || []);
+            setSelectedItem(null);
+        } catch {
+            message.error("Không tìm thấy dữ liệu");
+        }
+    };
+    // ================= SELECT =================
     const handleSelect = (item) => {
-
         setSelectedItem(item);
 
         form.setFieldsValue({
-
-            so_thua_con: 2
+            thua_con: [
+                {
+                    so_thua_moi: "",
+                    dien_tich: item.dien_tich / 2,
+                    coordinates: [
+                        { lng: null, lat: null },
+                        { lng: null, lat: null },
+                        { lng: null, lat: null }
+                    ]
+                },
+                {
+                    so_thua_moi: "",
+                    dien_tich: item.dien_tich / 2,
+                    coordinates: [
+                        { lng: null, lat: null },
+                        { lng: null, lat: null },
+                        { lng: null, lat: null }
+                    ]
+                }
+            ]
         });
     };
+    const thuaConWatch = useWatch("thua_con", form);
+    const previewPolygons = (thuaConWatch || [])
+        .map(item => {
+            const coords = (item?.coordinates || [])
+                .filter(p => p?.lng != null && p?.lat != null)
+                .map(p => [Number(p.lat), Number(p.lng)])
 
-    // ================= MỞ ADD MODAL =================
+            if (coords.length < 3) return null;
 
-    const handleOpenAddModal = (data) => {
+            return {
+                ...item,
+                coordinates: coords
+            };
+        })
+        .filter(Boolean);
 
-        setAddQueue(prev => [
-            ...prev,
-            data
-        ]);
+    const parseCoordinates = (text) => {
+        if (!text) return [];
+
+        return text
+            .split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .map((line) => {
+                const [lng, lat] = line.split(",");
+
+                return [
+                    Number(lng),
+                    Number(lat)
+                ];
+            });
     };
-
-    // ================= EFFECT =================
-
-    useEffect(() => {
-
-        if (
-            addQueue.length > 0 &&
-            !currentAdd
-        ) {
-
-            setCurrentAdd(
-                addQueue[0]
-            );
-
-            setOpenAdd(true);
-        }
-
-    }, [
-        addQueue,
-        currentAdd
-    ]);
-
-    // ================= ĐÓNG MODAL =================
-
-    const handleCloseAddModal = () => {
-
-        const newQueue =
-            addQueue.slice(1);
-
-        setAddQueue(newQueue);
-
-        if (newQueue.length > 0) {
-
-            setCurrentAdd(
-                newQueue[0]
-            );
-
-            setOpenAdd(true);
-
-        } else {
-
-            setCurrentAdd(null);
-
-            setOpenAdd(false);
-        }
-    };
-
     // ================= SUBMIT =================
-
     const handleSubmit = async (values) => {
-
         if (!selectedItem) {
-
-            message.error(
-                "Chọn thửa đất"
-            );
-
-            return;
+            return message.error("Chọn thửa");
         }
 
         try {
-
             setLoading(true);
 
-            // ================= DELETE =================
+            const thuaCon = values.thua_con.map(item => {
 
-            await deleteThuaDat(
-                selectedItem.id
-            );
+                const coords = (item.coordinates || [])
+                    .filter(p => p?.lng != null && p?.lat != null)
+                    .map(p => [Number(p.lng), Number(p.lat)]);
 
-            // ================= CREATE MODAL =================
+                if (coords.length < 3) {
+                    throw new Error(
+                        `Thửa ${item.so_thua_moi || ""} phải có ít nhất 3 điểm`
+                    );
+                }
 
-            const total =
-                Number(
-                    values.so_thua_con
-                );
+                const uniqueCoords = [
+                    ...new Map(coords.map(p => p.toString())).values()
+                ];
 
-            const area =
-                Number(
-                    selectedItem.dien_tich || 0
-                ) / total;
+                uniqueCoords.push(uniqueCoords[0]); // đóng polygon
 
-            for (
-                let i = 0;
-                i < total;
-                i++
-            ) {
+                return {
+                    so_thua_moi: item.so_thua_moi,
+                    dien_tich: item.dien_tich,
+                    coordinates: uniqueCoords
+                };
+            });
 
-                handleOpenAddModal({
+            const success = await onSubmit?.({
+                thua_dat_id: selectedItem.id,
+                thua_con: thuaCon
+            });
 
-                    parent:
-                        selectedItem,
+            if (!success) return;
 
-                    index:
-                        i + 1,
+            setSplitPolygons(thuaCon);
 
-                    tong_so_thua:
-                        total,
-
-                    dien_tich:
-                        area,
-
-                    polygon:
-                        selectedItem.geom
-                });
-            }
-
-            // ================= CALLBACK =================
-
-            if (onSubmit) {
-
-                onSubmit({
-
-                    thua_dat_id:
-                        selectedItem.id,
-
-                    so_thua_con:
-                        total
-                });
-            }
-
-            message.success(
-                `Tách ${total} thửa`
-            );
-
-            // ================= RESET =================
-
-            setSelectedItem(null);
-
-            setClickedData([]);
-
-            setMarker(null);
+            message.success(`Tách thành ${thuaCon.length} thửa`);
 
             form.resetFields();
+            setSelectedItem(null);
+            setResult([]);
+            setCccd("");
 
             onClose();
 
         } catch (err) {
-
-            console.error(err);
-
-            message.error(
-                "Tách thửa thất bại"
-            );
-
+            message.error(err.message || "Tách thửa thất bại");
         } finally {
-
             setLoading(false);
         }
     };
-
-    // ================= UI =================
-
+    // ================= GEOM =================
+    const polygonPositions = selectedItem?.geom?.coordinates?.[0]
+        ? selectedItem.geom.coordinates[0].map(c => [c[1], c[0]])
+        : [];
     return (
+        <Drawer
+            title="✂️ Tách thửa đất"
+            open={open}
+            width={1200}
+            onClose={onClose}
+        >
+            {/* ================= SEARCH + TABLE ================= */}
+            <Card>
+                <Input
+                    placeholder="Nhập CCCD"
+                    value={cccd}
+                    onChange={(e) => setCccd(e.target.value)}
+                />
+                <Button
+                    type="primary"
+                    block
+                    onClick={handleSearch}
+                    style={{ marginTop: 10 }}
+                >
+                    Tìm kiếm
+                </Button>
+                <Table
+                    style={{ marginTop: 10 }}
+                    rowKey="id"
+                    dataSource={result}
+                    pagination={false}
+                    size="small"
+                    onRow={(record) => ({
+                        onClick: () => handleSelect(record)
+                    })}
+                    columns={[
+                        { title: "Số thửa", dataIndex: "so_thua" },
+                        { title: "Tờ", dataIndex: "so_to_ban_do" },
+                        { title: "DT", dataIndex: "dien_tich" }
+                    ]}
+                />
+                {selectedItem && (
+                    <div style={{ marginTop: 10 }}>
+                        <Tag color="blue">
+                            Thửa: {selectedItem.so_thua}
+                        </Tag>
+                        <Tag color="green">
+                            {selectedItem.dien_tich} m²
+                        </Tag>
+                    </div>
+                )}
+            </Card>
+            {/* ================= FORM THỬA CON ================= */}
+            <Card style={{ marginTop: 15 }} title="✏️ Thông tin thửa con">
 
-        <>
-
-            {/* ================= DRAWER ================= */}
-
-            <Drawer
-
-                title="✂️ Tách thửa đất"
-
-                placement="right"
-
-                width={1450}
-
-                open={open}
-
-                destroyOnClose
-
-                onClose={() => {
-
-                    setSelectedItem(null);
-
-                    setClickedData([]);
-
-                    setMarker(null);
-
-                    form.resetFields();
-
-                    onClose();
-                }}
-            >
-
-                <Row gutter={16}>
-
-                    {/* ================= MAP ================= */}
-
-                    <Col span={15}>
-
-                        <Card
-                            title="🗺️ Click gần thửa đất để tìm"
-                            size="small"
-                        >
-
-                            <MapContainer
-
-                                center={[
-                                    21.0285,
-                                    105.8542
-                                ]}
-
-                                zoom={15}
-
-                                style={{
-                                    height: 820,
-                                    width: "100%",
-                                    borderRadius: 8
-                                }}
-                            >
-
-                                <TileLayer
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                />
-
-                                {/* CLICK */}
-
-                                <MapClickHandler
-
-                                    setClickedData={
-                                        setClickedData
-                                    }
-
-                                    setMarker={
-                                        setMarker
-                                    }
-
-                                    setLoading={
-                                        setLoading
-                                    }
-                                />
-
-                                {/* MARKER */}
-
-                                {
-                                    marker && (
-
-                                        <Marker
-                                            position={marker}
-                                        />
-                                    )
-                                }
-
-                                {/* POLYGON */}
-
-                                {
-                                    data.map(item => {
-
-                                        const geom =
-                                            typeof item.geom === "string"
-                                                ? JSON.parse(item.geom)
-                                                : item.geom;
-
-                                        const coords =
-                                            geom?.coordinates?.[0];
-
-                                        if (!coords) {
-                                            return null;
-                                        }
-
-                                        const positions =
-                                            coords.map(c => [
-                                                c[1],
-                                                c[0]
-                                            ]);
-
-                                        const isSelected =
-                                            selectedItem?.id === item.id;
-
-                                        return (
-
-                                            <Polygon
-
-                                                key={item.id}
-
-                                                positions={positions}
-
-                                                pathOptions={{
-
-                                                    color:
-                                                        isSelected
-                                                            ? "#ff4d4f"
-                                                            : "#1677ff",
-
-                                                    fillColor:
-                                                        isSelected
-                                                            ? "#ffccc7"
-                                                            : "#69b1ff",
-
-                                                    fillOpacity:
-                                                        isSelected
-                                                            ? 0.7
-                                                            : 0.4,
-
-                                                    weight:
-                                                        isSelected
-                                                            ? 5
-                                                            : 2
-                                                }}
-
-                                                eventHandlers={{
-
-                                                    click: () =>
-                                                        handleSelect(item)
-                                                }}
+                <Form
+                    form={form}
+                    layout="vertical"
+                    onFinish={handleSubmit}
+                >
+                    <Form.List name="thua_con">
+                        {(fields, { add, remove }) => (
+                            <>
+                                {fields.map((field, index) => (
+                                    <Card
+                                        key={field.key}
+                                        size="small"
+                                        style={{ marginBottom: 10 }}
+                                        title={`Thửa con ${index + 1}`}
+                                        extra={
+                                            <Button danger onClick={() => remove(field.name)}
                                             >
-
-                                                <Popup>
-
-                                                    <div>
-
-                                                        <h4>
-                                                            🏠 Thửa đất
-                                                        </h4>
-
-                                                        <p>
-                                                            <b>Thửa:</b>{" "}
-                                                            {item.so_thua}
-                                                        </p>
-
-                                                        <p>
-                                                            <b>Tờ:</b>{" "}
-                                                            {item.so_to_ban_do}
-                                                        </p>
-
-                                                        <p>
-                                                            <b>Diện tích:</b>{" "}
-                                                            {item.dien_tich} m²
-                                                        </p>
-
-                                                    </div>
-
-                                                </Popup>
-
-                                            </Polygon>
-                                        );
-                                    })
-                                }
-
-                            </MapContainer>
-
-                        </Card>
-
-                    </Col>
-
-                    {/* ================= RIGHT ================= */}
-
-                    <Col span={9}>
-
-                        <Card
-                            title="📋 Chọn thửa để tách"
-                            size="small"
-                        >
-
-                            {/* TABLE */}
-
-                            <Table
-
-                                size="small"
-
-                                rowKey="id"
-
-                                loading={loading}
-
-                                pagination={false}
-
-                                scroll={{
-                                    y: 300
-                                }}
-
-                                dataSource={
-                                    clickedData
-                                }
-
-                                rowClassName={(record) =>
-                                    selectedItem?.id === record.id
-                                        ? "selected-row"
-                                        : ""
-                                }
-
-                                onRow={(record) => ({
-
-                                    onClick: () =>
-                                        handleSelect(record)
-                                })}
-
-                                columns={[
-
-                                    {
-                                        title: "Thửa",
-                                        dataIndex: "so_thua",
-                                        width: 80
-                                    },
-
-                                    {
-                                        title: "Tờ",
-                                        dataIndex: "so_to_ban_do",
-                                        width: 80
-                                    },
-
-                                    {
-                                        title: "Diện tích",
-                                        dataIndex: "dien_tich",
-
-                                        render: v =>
-                                            `${v} m²`
-                                    },
-
-                                ]}
-                            />
-
-                            {/* INFO */}
-
-                            {
-                                selectedItem && (
-
-                                    <div
-                                        style={{
-                                            marginTop: 20
-                                        }}
-                                    >
-
-                                        <Tag color="blue">
-                                            Thửa:
-                                            {" "}
-                                            {selectedItem.so_thua}
-                                        </Tag>
-
-                                        <Tag color="green">
-                                            {selectedItem.dien_tich} m²
-                                        </Tag>
-
-                                    </div>
-                                )
-                            }
-
-                            {/* FORM */}
-
-                            <Form
-
-                                form={form}
-
-                                layout="vertical"
-
-                                onFinish={handleSubmit}
-
-                                style={{
-                                    marginTop: 20
-                                }}
-                            >
-
-                                <Form.Item
-
-                                    label="Số thửa con"
-
-                                    name="so_thua_con"
-
-                                    rules={[
-                                        {
-                                            required: true
+                                                Xóa
+                                            </Button>
                                         }
-                                    ]}
-                                >
+                                    >
+                                        <Form.Item
+                                            label="Số thửa mới"
+                                            name={[field.name, "so_thua_moi"]}
+                                            rules={[{ required: true }]}
+                                        >
+                                            <Input />
+                                        </Form.Item>
 
-                                    <InputNumber
+                                        <Form.Item
+                                            label="Diện tích (m²)"
+                                            name={[field.name, "dien_tich"]}
+                                            rules={[{ required: true }]}
+                                        >
+                                            <InputNumber
+                                                style={{ width: "100%" }}
+                                                min={0}
+                                            />
+                                        </Form.Item>
+                                        <Form.List name={[field.name, "coordinates"]}>
+                                            {(coordFields, { add: addPoint, remove: removePoint }) => (
+                                                <>
+                                                    {coordFields.map((coordField, idx) => (
+                                                        <Card
+                                                            key={coordField.key}
+                                                            size="small"
+                                                            style={{
+                                                                marginBottom: 8,
+                                                                background: "#fafafa"
+                                                            }}
+                                                            title={`Điểm ${idx + 1}`}
+                                                            extra={
+                                                                <Button
+                                                                    danger
+                                                                    size="small"
+                                                                    onClick={() =>
+                                                                        removePoint(coordField.name)
+                                                                    }
+                                                                >
+                                                                    Xóa
+                                                                </Button>
+                                                            }
+                                                        >
+                                                            <Row gutter={10}>
+                                                                <Col span={12}>
+                                                                    <Form.Item
+                                                                        label="Kinh độ (Lng)"
+                                                                        name={[
+                                                                            coordField.name,
+                                                                            "lng"
+                                                                        ]}
+                                                                        rules={[
+                                                                            {
+                                                                                required: true,
+                                                                                message: "Nhập kinh độ"
+                                                                            }
+                                                                        ]}
+                                                                    >
+                                                                        <InputNumber
+                                                                            style={{ width: "100%" }}
+                                                                            step={0.000001}
+                                                                            placeholder="105.8542"
+                                                                        />
+                                                                    </Form.Item>
+                                                                </Col>
 
-                                        min={2}
+                                                                <Col span={12}>
+                                                                    <Form.Item
+                                                                        label="Vĩ độ (Lat)"
+                                                                        name={[
+                                                                            coordField.name,
+                                                                            "lat"
+                                                                        ]}
+                                                                        rules={[
+                                                                            {
+                                                                                required: true,
+                                                                                message: "Nhập vĩ độ"
+                                                                            }
+                                                                        ]}
+                                                                    >
+                                                                        <InputNumber
+                                                                            style={{ width: "100%" }}
+                                                                            step={0.000001}
+                                                                            placeholder="21.0285"
+                                                                        />
+                                                                    </Form.Item>
+                                                                </Col>
+                                                            </Row>
+                                                        </Card>
+                                                    ))}
 
-                                        style={{
-                                            width: "100%"
-                                        }}
-                                    />
-
-                                </Form.Item>
+                                                    <Button
+                                                        block
+                                                        type="dashed"
+                                                        onClick={() =>
+                                                            addPoint({
+                                                                lng: null,
+                                                                lat: null
+                                                            })
+                                                        }
+                                                    >
+                                                        + Thêm điểm tọa độ
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </Form.List>
+                                    </Card>
+                                ))}
 
                                 <Button
-
-                                    type="primary"
-
-                                    htmlType="submit"
-
-                                    loading={loading}
-
+                                    type="dashed"
                                     block
+                                    onClick={() =>
+                                        add({ so_thua_moi: "", dien_tich: 0 })
+                                    }
+                                >
+                                    + Thêm thửa con
+                                </Button>
+
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    loading={loading}
+                                    block
+                                    style={{ marginTop: 10 }}
                                 >
                                     ✂️ Tách thửa
                                 </Button>
+                            </>
+                        )}
+                    </Form.List>
+                </Form>
+            </Card>
+            {/* ================= MAP ================= */}
+            <Card
+                title="🗺️ Bản đồ thửa đất"
+                style={{ marginTop: 15 }}
+                bodyStyle={{ padding: 0 }}
+            >
+                <MapContainer
+                    center={[21.0285, 105.8542]}
+                    zoom={15}
+                    style={{ height: 350, width: "100%" }}
+                >
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-                            </Form>
+                    {selectedItem && (
+                        <FlyToPolygon item={selectedItem} />
+                    )}
+                    {selectedItem && (
+                        <Polygon
+                            positions={polygonPositions}
+                            pathOptions={{
+                                color: "red",
+                                fillColor: "#ff4d4f",
+                                fillOpacity: 0.4
+                            }}
+                        >
+                            <Popup>
+                                <b>Thửa {selectedItem.so_thua}</b>
+                                <br />
+                                {selectedItem.dien_tich} m²
+                            </Popup>
+                        </Polygon>
+                    )}
+                    {previewPolygons.map((p, idx) => (
+                        <Polygon
+                            key={idx}
+                            positions={p.coordinates}
+                            pathOptions={{
+                                color: "green",
+                                fillColor: "#52c41a",
+                                fillOpacity: 0.4
+                            }}
+                        >
+                            <Popup>
+                                Thửa con {idx + 1}
+                                <br />
+                                {p.dien_tich} m²
+                            </Popup>
+                        </Polygon>
+                    ))}
+                </MapContainer>
+            </Card>
 
-                        </Card>
-
-                    </Col>
-
-                </Row>
-
-                {/* CSS */}
-
-                <style>
-                    {`
-                        .selected-row td {
-                            background: #e6f4ff !important;
-                        }
-                    `}
-                </style>
-
-            </Drawer>
-
-            {/* ================= ADD MODAL ================= */}
-
-            {
-                currentAdd && (
-
-                    <AddThuaDatModal
-
-                        open={openAdd}
-
-                        onClose={
-                            handleCloseAddModal
-                        }
-
-                        defaultValues={{
-
-                            so_thua:
-                                `${currentAdd.parent.so_thua}-${currentAdd.index}`,
-
-                            so_to_ban_do:
-                                currentAdd.parent.so_to_ban_do,
-
-                            dia_chi:
-                                currentAdd.parent.dia_chi,
-
-                            tinh:
-                                currentAdd.parent.tinh,
-
-                            dien_tich:
-                                currentAdd.dien_tich,
-
-                            loai_dat:
-                                currentAdd.parent.loai_dat,
-
-                            trang_thai:
-                                "dang_su_dung",
-
-                            polygon:
-                                currentAdd.polygon
-                        }}
-                    />
-                )
-            }
-
-        </>
+        </Drawer>
     );
 }

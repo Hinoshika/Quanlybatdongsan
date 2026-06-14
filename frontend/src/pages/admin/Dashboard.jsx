@@ -131,7 +131,7 @@ export default function Dashboard() {
                     {/* <Text type="secondary">Cập nhật thời gian thực • Hôm nay: {new Date().toLocaleDateString('vi-VN')}</Text> */}
                 </div>
 
-                <Button
+                {/* <Button
                     type="primary"
                     icon={<ReloadOutlined />}
                     onClick={fetchData}
@@ -139,7 +139,7 @@ export default function Dashboard() {
                     size="large"
                 >
                     Làm mới dữ liệu
-                </Button>
+                </Button> */}
             </div>
 
             {loading ? (

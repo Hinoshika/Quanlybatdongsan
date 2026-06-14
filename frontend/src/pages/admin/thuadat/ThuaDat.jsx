@@ -22,7 +22,8 @@ import {
     getChuSoHuuByCCCD,
     createCongTrinh,
     searchByCCCD,
-    mergeThuaDat
+    mergeThuaDat,
+    tachThuaDat
 } from "../../../services/thuaDat.service";
 
 import { transferSoHuuThuaDat } from "../../../services/soHuuThuaDat.service";
@@ -250,25 +251,54 @@ export default function ThuaDat() {
         }
     };
 
-    const handleMerge = async (values) => {
+    const handleMergeThua = async (payload) => {
         try {
-            const payload = {
-                thua_ids: values.thua_ids,
-            };
 
             const res = await mergeThuaDat(payload);
 
-            message.success(res?.message || "Gộp thửa thành công");
+            message.success(
+                res.message || "Gộp thửa thành công"
+            );
 
-            setOpenGopThua(false);
+            fetchData();
 
-            fetchData(); // reload list
+            return true;
+
         } catch (err) {
-            console.log(err);
-            message.error(err.response?.data?.message || "Gộp thửa thất bại");
+
+            message.error(
+                err.message || "Gộp thửa thất bại"
+            );
+
+            return false;
         }
     };
 
+    const handleTachThua = async (payload) => {
+        try {
+
+            const res = await tachThuaDat(payload);
+
+            message.success(
+                res.message || "Tách thửa thành công"
+            );
+
+            setOpenTachThua(false);
+
+            fetchData();
+
+            return true;
+
+        } catch (err) {
+
+            message.error(
+                err.response?.data?.message ||
+                "Tách thửa thất bại"
+            );
+
+            return false;
+        }
+    };
     // ================= DEDUPE OWNERS =================
     const uniqueOwners = useMemo(() => {
         const list = detail?.chu_so_huu || [];
@@ -339,13 +369,13 @@ export default function ThuaDat() {
                     </Col>
                     <Col xs={24} md={12} style={{ textAlign: 'right' }}>
                         <Space>
-                            <Button
+                            {/* <Button
                                 icon={<ReloadOutlined />}
                                 onClick={() => fetchData()}
                                 title="Làm mới"
                             >
                                 Làm mới
-                            </Button>
+                            </Button> */}
                             {role === "admin" && (
                                 <>
                                     <Button
@@ -408,14 +438,13 @@ export default function ThuaDat() {
                 open={openGopThua}
                 onClose={() => setOpenGopThua(false)}
                 data={data}
-                onSubmit={(values) => console.log("GỘP:", values)}
+                onSubmit={handleMergeThua}
             />
 
             <TachThuaModal
                 open={openTachThua}
                 onClose={() => setOpenTachThua(false)}
-                selected={selected}
-                onSubmit={(values) => console.log("TÁCH:", values)}
+                onSubmit={handleTachThua}
             />
 
             <AddThuaDatModal

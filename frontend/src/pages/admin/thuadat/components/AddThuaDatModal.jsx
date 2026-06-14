@@ -287,20 +287,10 @@ export default function AddThuaDatModal({
                                 <Col span={10}>
                                     <Input
                                         type="number"
-                                        placeholder="Latitude"
-                                        value={
-                                            point.lat
-                                        }
-                                        onChange={(
-                                            e
-                                        ) =>
-                                            updatePoint(
-                                                index,
-                                                "lat",
-                                                e
-                                                    .target
-                                                    .value
-                                            )
+                                        placeholder="Vĩ độ (Lat)"
+                                        value={point.lat}
+                                        onChange={(e) =>
+                                            updatePoint(index, "lat", e.target.value)
                                         }
                                     />
                                 </Col>
@@ -308,20 +298,10 @@ export default function AddThuaDatModal({
                                 <Col span={10}>
                                     <Input
                                         type="number"
-                                        placeholder="Longitude"
-                                        value={
-                                            point.lng
-                                        }
-                                        onChange={(
-                                            e
-                                        ) =>
-                                            updatePoint(
-                                                index,
-                                                "lng",
-                                                e
-                                                    .target
-                                                    .value
-                                            )
+                                        placeholder="Kinh độ (Lng)"
+                                        value={point.lng}
+                                        onChange={(e) =>
+                                            updatePoint(index, "lng", e.target.value)
                                         }
                                     />
                                 </Col>

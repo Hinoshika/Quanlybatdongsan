@@ -133,7 +133,7 @@ export default function CongTrinh() {
                 }}
             >
                 <h2 style={{ margin: 0 }}>
-                    🏗️ Quản lý công trình
+                    🏗️ Danh sách công trình
                 </h2>
             </div>
 

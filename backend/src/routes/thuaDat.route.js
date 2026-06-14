@@ -5,11 +5,15 @@ const ThuaDatController = require("../controllers/thuaDat.controller");
 
 // ================= SEARCH =================
 router.get("/search", ThuaDatController.search);
-
 router.get("/search/map", ThuaDatController.searchByMap);
 
-// ================= SEARCH BY CCCD (MAP + OWNER) =================
+// ================= SEARCH CCCD =================
 router.get("/cccd/:so_cccd", ThuaDatController.searchByCCCD);
+
+// ================= GỘP THỬA =================
+router.post("/merge", ThuaDatController.merge);
+
+router.post("/tach", ThuaDatController.tach);
 
 // ================= CRUD =================
 router.get("/", ThuaDatController.getAll);

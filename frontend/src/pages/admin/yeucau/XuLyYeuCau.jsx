@@ -156,7 +156,7 @@ export default function XuLyYeuCau() {
     ];
 
     return (
-        <Card title="Xử lý yêu cầu">
+        <Card title="Danh sách yêu cầu">
             <Table
                 rowKey="id"
                 loading={loading}

@@ -91,7 +91,238 @@ const ThuaDatService = {
 
         const data = await ThuaDatModel.searchByMap(lat, lng, radius);
         return data.map(format);
-    }
+    },
+
+    merge: async (thuaIds) => {
+
+        const thuas =
+            await ThuaDatModel.getByIds(thuaIds);
+
+        if (thuas.length < 2) {
+            throw new Error(
+                "Phải chọn ít nhất 2 thửa"
+            );
+        }
+
+        // cùng tờ bản đồ
+        if (
+            thuas.some(
+                t =>
+                    t.so_to_ban_do !==
+                    thuas[0].so_to_ban_do
+            )
+        ) {
+            throw new Error(
+                "Các thửa phải cùng tờ bản đồ"
+            );
+        }
+
+        // cùng loại đất
+        if (
+            thuas.some(
+                t =>
+                    t.loai_dat !==
+                    thuas[0].loai_dat
+            )
+        ) {
+            throw new Error(
+                "Các thửa phải cùng loại đất"
+            );
+        }
+
+        // cùng mục đích sử dụng
+        if (
+            thuas.some(
+                t =>
+                    t.muc_dich_su_dung !==
+                    thuas[0].muc_dich_su_dung
+            )
+        ) {
+            throw new Error(
+                "Các thửa phải cùng mục đích sử dụng"
+            );
+        }
+
+        // cùng thời hạn sử dụng
+        if (
+            thuas.some(
+                t =>
+                    t.thoi_han_su_dung !==
+                    thuas[0].thoi_han_su_dung
+            )
+        ) {
+            throw new Error(
+                "Các thửa phải cùng thời hạn sử dụng"
+            );
+        }
+
+        // cùng nguồn gốc sử dụng
+        if (
+            thuas.some(
+                t =>
+                    t.nguon_goc_su_dung !==
+                    thuas[0].nguon_goc_su_dung
+            )
+        ) {
+            throw new Error(
+                "Các thửa phải cùng nguồn gốc sử dụng"
+            );
+        }
+
+        // cùng hình thức sử dụng
+        if (
+            thuas.some(
+                t =>
+                    t.hinh_thuc_su_dung !==
+                    "Sử Dụng Riêng"
+            )
+        ) {
+            throw new Error(
+                "Chỉ được gộp các thửa sử dụng riêng"
+            );
+        }
+
+        if (
+            thuas.some(
+                t =>
+                    t.trang_thai !== "Đang sử dụng"
+            )
+        ) {
+            throw new Error(
+                "Chỉ được gộp các thửa đang sử dụng"
+            );
+        }
+
+        // trạng thái
+        // const invalid = thuas.find(
+        //     t =>
+        //         t.trang_thai === "tranh_chap" ||
+        //         t.trang_thai === "the_chap" ||
+        //         t.trang_thai === "da_gop"
+        // );
+
+        // if (invalid) {
+        //     throw new Error(
+        //         `Thửa ${invalid.so_thua} không đủ điều kiện gộp`
+        //     );
+        // }
+
+        // liền kề
+        const adjacent =
+            await ThuaDatModel.checkAdjacent(
+                thuaIds
+            );
+
+        if (!adjacent) {
+            throw new Error(
+                "Các thửa được chọn không liền kề nhau"
+            );
+        }
+
+        return await ThuaDatModel.merge(
+            thuaIds
+        );
+    },
+    tach: async (payload) => {
+
+        const oldThua =
+            await ThuaDatModel.getById(
+                payload.thua_dat_id
+            );
+
+        if (!oldThua) {
+            throw new Error("Không tìm thấy thửa đất");
+        }
+
+        // ================= RULE 1: trạng thái =================
+        if (oldThua.trang_thai !== "Đang sử dụng") {
+            throw new Error("Thửa đất không ở trạng thái hợp lệ để tách");
+        }
+
+        // ================= RULE 2: hình thức sử dụng =================
+        if (
+            (oldThua.hinh_thuc_su_dung || "")
+                .trim()
+                .toLowerCase() !== "sử dụng riêng"
+        ) {
+            throw new Error(
+                "Chỉ được tách thửa có hình thức sử dụng riêng"
+            );
+        }
+
+        // ================= RULE 3: thửa con =================
+        if (
+            !payload.thua_con ||
+            payload.thua_con.length < 2
+        ) {
+            throw new Error("Phải có ít nhất 2 thửa con");
+        }
+
+        // ================= VALIDATE THỬA CON =================
+        for (const thua of payload.thua_con) {
+
+            if (!thua.so_thua_moi) {
+                throw new Error("Thiếu số thửa mới");
+            }
+
+            if (!thua.dien_tich || Number(thua.dien_tich) <= 0) {
+                throw new Error(
+                    `Diện tích thửa ${thua.so_thua_moi} không hợp lệ`
+                );
+            }
+
+            if (
+                !Array.isArray(thua.coordinates) ||
+                thua.coordinates.length < 3
+            ) {
+                throw new Error(
+                    `Thửa ${thua.so_thua_moi} phải có ít nhất 3 điểm tọa độ`
+                );
+            }
+
+            // ================= CHECK COORDINATES =================
+            for (const point of thua.coordinates) {
+
+                if (!Array.isArray(point) || point.length !== 2) {
+                    throw new Error(
+                        `Tọa độ thửa ${thua.so_thua_moi} không hợp lệ`
+                    );
+                }
+
+                const [lng, lat] = point;
+
+                if (isNaN(lng) || isNaN(lat)) {
+                    throw new Error(
+                        `Tọa độ thửa ${thua.so_thua_moi} phải là số`
+                    );
+                }
+
+                if (lng < -180 || lng > 180) {
+                    throw new Error(`Kinh độ ${lng} không hợp lệ`);
+                }
+
+                if (lat < -90 || lat > 90) {
+                    throw new Error(`Vĩ độ ${lat} không hợp lệ`);
+                }
+            }
+        }
+
+        // ================= RULE 4: tổng diện tích =================
+        const tongDienTich =
+            payload.thua_con.reduce(
+                (s, x) => s + Number(x.dien_tich || 0),
+                0
+            );
+
+        if (tongDienTich > Number(oldThua.dien_tich)) {
+            throw new Error(
+                `Tổng diện tích (${tongDienTich} m²) vượt diện tích thửa gốc (${oldThua.dien_tich} m²)`
+            );
+        }
+
+        // ================= CALL MODEL =================
+        return await ThuaDatModel.tach(payload);
+    },
 };
 
 module.exports = ThuaDatService;

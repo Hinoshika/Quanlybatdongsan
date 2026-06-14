@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import ChatAI from "./Ai/ChatAI";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -69,7 +70,7 @@ export default function Home() {
                     </div>
                 </div>
             </div>
-
+            <ChatAI />
             {/* Tính năng nổi bật */}
             <div style={{ backgroundColor: "white", padding: "60px 20px" }}>
                 <h3 style={{ textAlign: "center", fontSize: "28px", marginBottom: "40px", color: "#1e3a8a" }}>

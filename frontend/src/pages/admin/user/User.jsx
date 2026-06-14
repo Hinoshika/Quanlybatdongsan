@@ -100,7 +100,7 @@ export default function User() {
     return (
         <div style={{ padding: 24 }}>
 
-            <h2>👤 Quản lý người dùng</h2>
+            <h2>👤 Danh sách người dùng</h2>
 
             <Button type="primary" onClick={handleAdd}>
                 + Thêm người dùng

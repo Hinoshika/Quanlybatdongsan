@@ -136,7 +136,7 @@ export default function ChuSoHuu() {
             {/* Header */}
             <div style={{ marginBottom: "24px" }}>
                 <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "700", color: "#1e293b" }}>
-                    👤 Quản lý chủ sở hữu
+                    👤 Danh sách chủ sở hữu
                 </h2>
                 <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "14px" }}>
                     Quản lý thông tin chủ sở hữu bất động sản

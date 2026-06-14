@@ -91,17 +91,29 @@ export default function GopThuaDrawer({ open, onClose, onSubmit }) {
             content: "Tạo thửa mới từ các thửa đã chọn",
 
             async onOk() {
-                await onSubmit({
-                    type: "MERGE",
-                    thua_ids: selectedIds
-                });
+                try {
 
-                message.success("Gộp thành công");
+                    const res = await onSubmit({
+                        type: "MERGE",
+                        thua_ids: selectedIds
+                    });
 
-                setResult([]);
-                setSelectedIds([]);
-                setCccd("");
-                onClose();
+                    if (!res) return;
+
+                    // message.success("Gộp thành công");
+
+                    setResult([]);
+                    setSelectedIds([]);
+                    setCccd("");
+
+                    onClose();
+
+                } catch (err) {
+
+                    message.error(
+                        err.message || "Gộp thửa thất bại"
+                    );
+                }
             }
         });
     };
@@ -142,98 +154,93 @@ export default function GopThuaDrawer({ open, onClose, onSubmit }) {
             onClose={onClose}
         >
 
-            <Row gutter={16}>
+            {/* ================= THÔNG TIN ================= */}
+            <Card>
+                <Input
+                    placeholder="Nhập CCCD"
+                    value={cccd}
+                    onChange={e => setCccd(e.target.value)}
+                />
 
-                {/* ================= LEFT ================= */}
-                <Col span={16}>
-                    <Card>
+                <Button
+                    type="primary"
+                    block
+                    style={{ marginTop: 8 }}
+                    onClick={handleSearch}
+                >
+                    Tìm kiếm
+                </Button>
 
-                        <Input
-                            placeholder="Nhập CCCD"
-                            value={cccd}
-                            onChange={e => setCccd(e.target.value)}
-                        />
+                <div style={{ marginTop: 12 }}>
+                    <Tag>Chọn: {selectedIds.length}</Tag>
+                    <Tag color="blue">DT: {totalArea} m²</Tag>
+                </div>
 
-                        <Button
-                            type="primary"
-                            block
-                            style={{ marginTop: 8 }}
-                            onClick={handleSearch}
-                        >
-                            Tìm kiếm
-                        </Button>
 
-                        {/* ================= STATS ================= */}
-                        <div style={{ marginTop: 12 }}>
-                            <Tag>Chọn: {selectedIds.length}</Tag>
-                            <Tag color="blue">DT: {totalArea} m²</Tag>
-                            {/* <Tag color={isValidMerge ? "green" : "red"}>
-                                {isValidMerge ? "OK" : "INVALID"}
-                            </Tag> */}
-                        </div>
+                <Table
+                    rowKey="id"
+                    size="small"
+                    dataSource={result}
+                    columns={columns}
+                    pagination={false}
+                    scroll={{ x: 2600, y: 350 }}
+                    style={{ marginTop: 12 }}
+                    rowSelection={{
+                        selectedRowKeys: selectedIds,
+                        onChange: handleSelect
+                    }}
+                />
+            </Card>
 
-                        <Button
-                            danger
-                            block
-                            style={{ marginTop: 12 }}
-                            onClick={handleMerge}
-                        >
-                            🔗 Gộp thửa
-                        </Button>
+            {/* ================= MAP ================= */}
+            <Card
+                title="🗺️ Bản đồ các thửa đã chọn"
+                style={{ marginTop: 16 }}
+                bodyStyle={{ padding: 0 }}
+            >
+                <MapContainer
+                    center={[21.0285, 105.8542]}
+                    zoom={15}
+                    style={{ height: 400, width: "100%" }}
+                >
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-                        {/* ================= TABLE ================= */}
-                        <Table
-                            rowKey="id"
-                            size="small"
-                            dataSource={result}   // ✅ dùng trực tiếp backend trả về
-                            columns={columns}
-                            pagination={false}
-                            scroll={{ x: 2600, y: 420 }}
-                            rowSelection={{
-                                selectedRowKeys: selectedIds,
-                                onChange: handleSelect
-                            }}
-                        />
-                    </Card>
-                </Col>
+                    <MapFlyTo target={marker} />
 
-                {/* ================= MAP ================= */}
-                <Col span={8}>
-                    <Card title="🗺️ Map" bodyStyle={{ padding: 0 }}>
-                        <MapContainer
-                            center={[21.0285, 105.8542]}
-                            zoom={15}
-                            style={{ height: 650 }}
-                        >
-                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    {selectedData.map(item => {
+                        const coords = item.geom?.coordinates?.[0];
+                        if (!coords) return null;
 
-                            <MapFlyTo target={marker} />
+                        const positions = coords.map(c => [c[1], c[0]]);
 
-                            {selectedData.map(item => {
-                                const coords = item.geom?.coordinates?.[0];
-                                if (!coords) return null;
+                        return (
+                            <Polygon
+                                key={item.id}
+                                positions={positions}
+                                pathOptions={{
+                                    color: "red",
+                                    fillOpacity: 0.4
+                                }}
+                            >
+                                <Popup>
+                                    <b>{item.so_thua}</b>
+                                    <br />
+                                    {item.dia_chi}
+                                </Popup>
+                            </Polygon>
+                        );
+                    })}
+                </MapContainer>
+                <Button
+                    danger
+                    block
+                    style={{ marginTop: 12 }}
+                    onClick={handleMerge}
+                >
+                    🔗 Gộp thửa
+                </Button>
 
-                                const positions = coords.map(c => [c[1], c[0]]);
-
-                                return (
-                                    <Polygon
-                                        key={item.id}
-                                        positions={positions}
-                                        pathOptions={{ color: "red", fillOpacity: 0.4 }}
-                                    >
-                                        <Popup>
-                                            <b>{item.so_thua}</b>
-                                            <br />
-                                            {item.dia_chi}
-                                        </Popup>
-                                    </Polygon>
-                                );
-                            })}
-                        </MapContainer>
-                    </Card>
-                </Col>
-
-            </Row>
+            </Card>
         </Drawer>
     );
 }

@@ -107,7 +107,61 @@ const ThuaDatController = {
                 message: err.message || "Lỗi server khi tìm kiếm theo bản đồ"
             });
         }
-    }
+    },
+    // ================= GỘP THỬA =================
+    merge: async (req, res) => {
+        console.log("BODY:", req.body);
+        try {
+
+            const { thua_ids } = req.body;
+
+            const data =
+                await ThuaDatService.merge(
+                    thua_ids
+                );
+
+            res.json({
+                success: true,
+                message: "Gộp thửa thành công",
+                data
+            });
+
+        } catch (err) {
+
+            res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+    },
+    tach: async (req, res) => {
+
+        console.log(
+            JSON.stringify(req.body, null, 2)
+        );
+
+        try {
+            const result =
+                await ThuaDatService.tach(
+                    req.body
+                );
+
+            res.json({
+                success: true,
+                message: "Tách thửa thành công",
+                data: result
+            });
+
+        } catch (err) {
+
+            console.log(err);
+
+            res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+    },
 };
 
 module.exports = ThuaDatController;
