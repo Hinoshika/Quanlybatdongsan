@@ -2,18 +2,14 @@ const express = require("express");
 const router = express.Router();
 
 const ThuaDatController = require("../controllers/thuaDat.controller");
+const { verifyToken } = require("../middleware/auth.middleware");
 
-// ================= SEARCH =================
+// ================= PUBLIC =================
 router.get("/search", ThuaDatController.search);
 router.get("/search/map", ThuaDatController.searchByMap);
-
-// ================= SEARCH CCCD =================
 router.get("/cccd/:so_cccd", ThuaDatController.searchByCCCD);
 
-// ================= GỘP THỬA =================
-router.post("/merge", ThuaDatController.merge);
-
-router.post("/tach", ThuaDatController.tach);
+// ================= PROTECTED =================
 
 // ================= CRUD =================
 router.get("/", ThuaDatController.getAll);
@@ -22,5 +18,9 @@ router.get("/:id", ThuaDatController.getById);
 router.post("/", ThuaDatController.create);
 router.put("/:id", ThuaDatController.update);
 router.delete("/:id", ThuaDatController.delete);
+
+// ================= ACTION =================
+router.post("/merge", ThuaDatController.merge);
+router.post("/tach", ThuaDatController.tach);
 
 module.exports = router;

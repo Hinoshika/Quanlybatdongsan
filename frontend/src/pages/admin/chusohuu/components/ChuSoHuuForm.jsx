@@ -90,7 +90,7 @@ export default function ChuSoHuuForm({
 
                     <Form.Item
                         name="so_cccd"
-                        label="CCCD"
+                        label="CCCD / Mã số thuế"
                     >
                         <InputNumber
                             style={{

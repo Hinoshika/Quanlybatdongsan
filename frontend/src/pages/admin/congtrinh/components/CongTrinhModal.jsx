@@ -253,6 +253,7 @@ export default function CongTrinhModal({
                     <Form.Item
                         name="ten_cong_trinh"
                         label="Tên công trình"
+                        rules={[{ required: true, message: "Nhập tên công trình" }]}
                     >
                         <Input />
                     </Form.Item>
@@ -260,28 +261,34 @@ export default function CongTrinhModal({
                     <Form.Item
                         name="loai_cong_trinh"
                         label="Loại công trình"
+                        rules={[{ required: true, message: "Chọn loại công trình" }]}
                     >
                         <Select
                             options={[
-                                {
-                                    value: "Nhà ở",
-                                    label: "Nhà ở"
-                                },
-                                {
-                                    value: "Cao ốc",
-                                    label: "Cao ốc"
-                                },
-                                {
-                                    value: "Nhà xưởng",
-                                    label: "Nhà xưởng"
-                                }
+                                { value: "Công trình dân dụng", label: "Công trình dân dụng" },
+                                { value: "Công trình công nghiệp", label: "Công trình công nghiệp" },
+                                { value: "Công trình giao thông", label: "Công trình giao thông" },
+                                { value: "Công trình nông nghiệp và phát triển nông thôn", label: "Công trình nông nghiệp và phát triển nông thôn" },
+                                { value: "Công trình thủy lợi", label: "Công trình thủy lợi" },
+                                { value: "Công trình văn hóa, thể thao và du lịch", label: "Công trình văn hóa, thể thao và du lịch" },
+                                { value: "Công trình y tế và giáo dục", label: "Công trình y tế và giáo dục" },
+                                { value: "Công trình công cộng khác", label: "Công trình công cộng khác" }
                             ]}
                         />
                     </Form.Item>
 
                     <Form.Item
-                        name="dia_chi"
-                        label="Địa chỉ"
+                        name="so_tang"
+                        label="Số tầng"
+                        rules={[{ required: true, message: "Nhập số tầng" }]}
+                    >
+                        <InputNumber style={{ width: "100%" }} min={0} />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="ket_cau"
+                        label="Kết cấu"
+                        rules={[{ required: true, message: "Nhập kết cấu" }]}
                     >
                         <Input />
                     </Form.Item>
@@ -289,35 +296,17 @@ export default function CongTrinhModal({
                     <Form.Item
                         name="dien_tich_xay_dung"
                         label="Diện tích xây dựng"
+                        rules={[{ required: true, message: "Nhập diện tích xây dựng" }]}
                     >
-                        <InputNumber
-                            style={{ width: "100%" }}
-                        />
+                        <InputNumber style={{ width: "100%" }} />
                     </Form.Item>
 
                     <Form.Item
-                        name="dien_tich_san"
-                        label="Diện tích sàn"
+                        name="tong_dien_tich_san"
+                        label="Tổng diện tích sàn"
+                        rules={[{ required: true, message: "Nhập tổng diện tích sàn" }]}
                     >
-                        <InputNumber
-                            style={{ width: "100%" }}
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="so_tang"
-                        label="Số tầng"
-                    >
-                        <InputNumber
-                            style={{ width: "100%" }}
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="ket_cau"
-                        label="Kết cấu"
-                    >
-                        <Input />
+                        <InputNumber style={{ width: "100%" }} />
                     </Form.Item>
 
                     <Form.Item

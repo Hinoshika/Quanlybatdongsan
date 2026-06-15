@@ -11,6 +11,7 @@ const soHuuThuaDatRoutes = require("./routes/soHuuThuaDat.route");
 const soHuuCongTrinhRoutes = require("./routes/soHuuCongTrinh.route");
 const yeuCauRoutes = require("./routes/yeuCau.routes");
 const chatRoute = require("./routes/chat.route");
+const lichSuChinhSuaRoutes = require("./routes/lichSuChinhSua.routes");
 
 const app = express();
 
@@ -33,7 +34,7 @@ app.use("/api/so-huu-thua-dat", soHuuThuaDatRoutes);
 app.use("/api/so-huu-cong-trinh", soHuuCongTrinhRoutes);
 app.use("/api/yeu-cau", yeuCauRoutes);
 app.use("/api/chat", chatRoute);
-
+app.use("/api/lich-su-chinh-sua", lichSuChinhSuaRoutes);
 // =====================
 // HEALTH CHECK
 // =====================

@@ -5,10 +5,11 @@ const ChuSoHuu = {
     // GET ALL
     getAll: async () => {
         const result = await db.query(`
-            SELECT *
-            FROM chu_so_huu
-            ORDER BY id DESC
-        `);
+        SELECT *
+        FROM chu_so_huu
+        WHERE deleted_at IS NULL
+        ORDER BY id DESC
+    `);
         return result.rows;
     },
 
@@ -104,8 +105,9 @@ const ChuSoHuu = {
 
     delete: async (id) => {
         const result = await db.query(`
-        DELETE FROM chu_so_huu
-        WHERE id = $1
+        UPDATE chu_so_huu
+        SET deleted_at = NOW()
+        WHERE id = $1 AND deleted_at IS NULL
         RETURNING *
     `, [id]);
 
@@ -115,6 +117,7 @@ const ChuSoHuu = {
     // GET TÀI SẢN THEO CHỦ SỞ HỮU
     getTaiSanByChuSoHuuId: async (chu_so_huu_id) => {
         const result = await db.query(`
+        WITH dat AS (
             SELECT 
                 td.id,
                 td.so_thua,
@@ -126,16 +129,69 @@ const ChuSoHuu = {
                 td.tinh,
                 ST_AsGeoJSON(td.geom) as geom,
 
-                sh.ty_le_so_huu,
-                sh.ngay_bat_dau,
-                sh.ngay_ket_thuc
+                sh.ty_le_so_huu AS ty_le_so_huu_dat,
+                sh.ngay_bat_dau AS ngay_bat_dau_dat,
+                sh.ngay_ket_thuc AS ngay_ket_thuc_dat
 
             FROM so_huu_thua_dat sh
-            JOIN thua_dat td ON td.id = sh.thua_dat_id
+            JOIN thua_dat td 
+                ON td.id = sh.thua_dat_id
             WHERE sh.chu_so_huu_id = $1
               AND td.deleted_at IS NULL
-            ORDER BY td.id DESC
-        `, [chu_so_huu_id]);
+        ),
+
+        cong_trinh_data AS (
+            SELECT 
+                ct.thua_dat_id,
+                jsonb_build_object(
+                    'id', ct.id,
+                    'ten_cong_trinh', ct.ten_cong_trinh,
+                    'loai_cong_trinh', ct.loai_cong_trinh,
+                    'dia_chi', ct.dia_chi,
+                    'dien_tich_xay_dung', ct.dien_tich_xay_dung,
+                    'dien_tich_san', ct.dien_tich_san,
+                    'so_tang', ct.so_tang,
+                    'nam_xay_dung', ct.nam_xay_dung,
+                    'trang_thai', ct.trang_thai,
+
+                    'ty_le_so_huu', sch.ty_le_so_huu,
+                    'ngay_bat_dau', sch.ngay_bat_dau,
+                    'ngay_ket_thuc', sch.ngay_ket_thuc
+                ) AS ct_json
+            FROM cong_trinh ct
+            JOIN so_huu_cong_trinh sch
+                ON sch.cong_trinh_id = ct.id
+                AND sch.chu_so_huu_id = $1
+                AND (sch.ngay_ket_thuc IS NULL OR sch.ngay_ket_thuc > CURRENT_DATE)
+        )
+
+        SELECT 
+            d.*,
+            COALESCE(
+                json_agg(c.ct_json) FILTER (WHERE c.ct_json IS NOT NULL),
+                '[]'
+            ) AS cong_trinh
+
+        FROM dat d
+        LEFT JOIN cong_trinh_data c
+            ON c.thua_dat_id = d.id
+
+        GROUP BY 
+            d.id,
+            d.so_thua,
+            d.so_to_ban_do,
+            d.loai_dat,
+            d.dien_tich,
+            d.trang_thai,
+            d.dia_chi,
+            d.tinh,
+            d.geom,
+            d.ty_le_so_huu_dat,
+            d.ngay_bat_dau_dat,
+            d.ngay_ket_thuc_dat
+
+        ORDER BY d.id DESC
+    `, [chu_so_huu_id]);
 
         return result.rows;
     },

@@ -7,6 +7,7 @@ import Home from "../pages/client/Home";
 import Profile from "../pages/client/profile/Profile";
 import SearchPage from "../pages/client/search/SearchPage";
 import RequestPage from "../pages/client/request/RequestPage";
+import RequestUser from "../pages/client/request/RequestUser";
 
 import Dashboard from "../pages/admin/Dashboard";
 import ThuaDat from "../pages/admin/thuadat/ThuaDat";
@@ -16,6 +17,7 @@ import ChuSoHuu from "../pages/admin/chusohuu/ChuSoHuu";
 import User from "../pages/admin/user/User";
 import BienDong from "../pages/admin/biendong/BienDong";
 import XuLyYeuCau from "../pages/admin/yeucau/XuLyYeuCau";
+import SystemHistory from "../pages/admin/system-history/SystemHistory";
 
 export default function AppRoutes() {
 
@@ -29,6 +31,7 @@ export default function AppRoutes() {
                     <Route path="profile" element={<Profile />} />
                     <Route path="search" element={<SearchPage />} />
                     <Route path="request" element={<RequestPage />} />
+                    <Route path="requestuser" element={<RequestUser />} />
                 </Route>
 
                 {/* ADMIN */}
@@ -49,6 +52,8 @@ export default function AppRoutes() {
                     <Route path="bien-dong" element={<BienDong />} />
 
                     <Route path="xu-ly-yeu-cau" element={<XuLyYeuCau />} />
+
+                    <Route path="system-history" element={<SystemHistory />} />
 
                 </Route>
 

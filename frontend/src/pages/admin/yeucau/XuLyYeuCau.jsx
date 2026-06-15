@@ -24,6 +24,7 @@ export default function XuLyYeuCau() {
     const [selected, setSelected] = useState(null);
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+
     const { TextArea } = Input;
     const [form] = Form.useForm();
 
@@ -135,24 +136,6 @@ export default function XuLyYeuCau() {
                     )
                     : "",
         },
-        {
-            title: "Thao tác",
-            width: 120,
-            render: (_, record) => (
-                <Button
-                    type="primary"
-                    disabled={
-                        record.trang_thai !==
-                        "CHO_XU_LY"
-                    }
-                    onClick={() =>
-                        handleOpen(record)
-                    }
-                >
-                    Xử lý
-                </Button>
-            ),
-        },
     ];
 
     return (
@@ -165,6 +148,13 @@ export default function XuLyYeuCau() {
                 pagination={{
                     pageSize: 10,
                 }}
+                onRow={(record) => ({
+                    onClick: () =>
+                        handleOpen(record),
+                    style: {
+                        cursor: "pointer",
+                    },
+                })}
             />
 
             <Modal
@@ -224,44 +214,65 @@ export default function XuLyYeuCau() {
                                 label="Ghi chú xử lý"
                                 name="ghi_chu_xu_ly"
                             >
-                                <TextArea rows={5} />
+                                <TextArea
+                                    rows={5}
+                                    disabled={
+                                        selected.trang_thai !==
+                                        "CHO_XU_LY"
+                                    }
+                                />
                             </Form.Item>
                         </Form>
 
-                        <Space>
-                            <Popconfirm
-                                title="Bạn có chắc muốn từ chối yêu cầu này?"
-                                okText="Đồng ý"
-                                cancelText="Hủy"
-                                onConfirm={() =>
-                                    handleUpdate(
-                                        "TU_CHOI"
-                                    )
-                                }
-                            >
-                                <Button danger>
-                                    Từ chối
-                                </Button>
-                            </Popconfirm>
+                        {selected.trang_thai ===
+                            "CHO_XU_LY" && (
+                                <Space>
+                                    <Popconfirm
+                                        title="Bạn có chắc muốn từ chối yêu cầu này?"
+                                        okText="Đồng ý"
+                                        cancelText="Hủy"
+                                        onConfirm={() =>
+                                            handleUpdate(
+                                                "TU_CHOI"
+                                            )
+                                        }
+                                    >
+                                        <Button danger>
+                                            Từ chối
+                                        </Button>
+                                    </Popconfirm>
 
-                            <Popconfirm
-                                title="Bạn có chắc muốn duyệt yêu cầu này?"
-                                okText="Đồng ý"
-                                cancelText="Hủy"
-                                onConfirm={() =>
-                                    handleUpdate(
-                                        "DA_DUYET"
-                                    )
-                                }
-                            >
-                                <Button type="primary">
-                                    Duyệt yêu cầu
-                                </Button>
-                            </Popconfirm>
-                        </Space>
+                                    <Popconfirm
+                                        title="Bạn có chắc muốn duyệt yêu cầu này?"
+                                        okText="Đồng ý"
+                                        cancelText="Hủy"
+                                        onConfirm={() =>
+                                            handleUpdate(
+                                                "DA_DUYET"
+                                            )
+                                        }
+                                    >
+                                        <Button type="primary">
+                                            Duyệt yêu cầu
+                                        </Button>
+                                    </Popconfirm>
+                                </Space>
+                            )}
                     </>
                 )}
             </Modal>
+
+            <style>
+                {`
+                    .ant-table-tbody > tr {
+                        cursor: pointer;
+                    }
+
+                    .ant-table-tbody > tr:hover > td {
+                        background: #f5f5f5 !important;
+                    }
+                `}
+            </style>
         </Card>
     );
 }

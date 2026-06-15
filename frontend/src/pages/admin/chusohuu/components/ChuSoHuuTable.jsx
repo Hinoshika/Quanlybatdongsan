@@ -14,7 +14,7 @@ export default function ChuSoHuuTable({
         },
 
         {
-            title: "CCCD",
+            title: "CCCD / Mã số thuế",
             dataIndex: "so_cccd"
         },
 

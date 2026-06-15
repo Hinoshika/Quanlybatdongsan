@@ -1,4 +1,5 @@
 const ThuaDatModel = require("../models/thuaDat.model");
+const LichSuChinhSuaService = require("../services/lichSuChinhSua.service");
 
 const safeGeom = (geom) => {
     if (!geom) return null;
@@ -32,21 +33,14 @@ const ThuaDatService = {
         return format(data);
     },
 
-    create: async (data) => {
+    create: async (data, user) => {
 
         if (data.polygon?.length >= 3) {
-
-            const overlaps =
-                await ThuaDatModel.checkOverlap(
-                    data.polygon
-                );
+            const overlaps = await ThuaDatModel.checkOverlap(data.polygon);
 
             if (overlaps.length > 0) {
-
                 const ds = overlaps
-                    .map(x =>
-                        `Thửa ${x.so_thua}/Tờ ${x.so_to_ban_do}`
-                    )
+                    .map(x => `Thửa ${x.so_thua}/Tờ ${x.so_to_ban_do}`)
                     .join(", ");
 
                 const error = new Error(
@@ -54,22 +48,60 @@ const ThuaDatService = {
                 );
 
                 error.status = 400;
-
                 throw error;
             }
         }
 
-        return await ThuaDatModel.create(data);
+        const created = await ThuaDatModel.create(data);
+
+        await LichSuChinhSuaService.log({
+            user,
+            action: "CREATE",
+            object: "THUA_DAT",
+            objectId: created.id,
+            newData: created,
+            reason: "Tạo thửa đất mới"
+        });
+
+        return created;
     },
 
-    update: async (id, data) => {
+    update: async (id, data, user) => {
+
         const old = await ThuaDatModel.getById(id);
         const payload = { ...old, ...data };
-        return ThuaDatModel.update(id, payload);
+
+        const updated = await ThuaDatModel.update(id, payload);
+
+        await LichSuChinhSuaService.log({
+            user,
+            action: "UPDATE",
+            object: "THUA_DAT",
+            objectId: id,
+            oldData: old,
+            newData: updated,
+            reason: "Cập nhật thửa đất"
+        });
+
+        return updated;
     },
 
-    delete: async (id) => {
-        return ThuaDatModel.delete(id);
+    delete: async (id, user) => {
+
+        const old = await ThuaDatModel.getById(id);
+
+        const result = await ThuaDatModel.delete(id);
+
+        await LichSuChinhSuaService.log({
+            user,
+            action: "DELETE",
+            object: "THUA_DAT",
+            objectId: id,
+            oldData: old,
+            reason: "Xóa thửa đất"
+        });
+
+        return result;
     },
 
     search: async (query) => {
@@ -93,7 +125,7 @@ const ThuaDatService = {
         return data.map(format);
     },
 
-    merge: async (thuaIds) => {
+    merge: async (thuaIds, user) => {
 
         const thuas =
             await ThuaDatModel.getByIds(thuaIds);
@@ -219,11 +251,22 @@ const ThuaDatService = {
             );
         }
 
-        return await ThuaDatModel.merge(
-            thuaIds
-        );
+        const result = await ThuaDatModel.merge(thuaIds);
+
+        // ================= LOG =================
+        await LichSuChinhSuaService.log({
+            user: user || { id: 1 },
+            action: "MERGE",
+            object: "THUA_DAT",
+            objectId: result?.id || null,
+            oldData: thuas,
+            newData: result,
+            reason: "Gộp thửa đất"
+        });
+
+        return result;
     },
-    tach: async (payload) => {
+    tach: async (payload, user) => {
 
         const oldThua =
             await ThuaDatModel.getById(
@@ -320,8 +363,20 @@ const ThuaDatService = {
             );
         }
 
-        // ================= CALL MODEL =================
-        return await ThuaDatModel.tach(payload);
+        const result = await ThuaDatModel.tach(payload);
+
+        // ================= LOG =================
+        await LichSuChinhSuaService.log({
+            user: user || { id: 1 },
+            action: "TACH",
+            object: "THUA_DAT",
+            objectId: payload.thua_dat_id,
+            oldData: oldThua,
+            newData: result,
+            reason: "Tách thửa đất"
+        });
+
+        return result;
     },
 };
 

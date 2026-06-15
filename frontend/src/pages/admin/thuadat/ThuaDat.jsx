@@ -276,7 +276,6 @@ export default function ThuaDat() {
 
     const handleTachThua = async (payload) => {
         try {
-
             const res = await tachThuaDat(payload);
 
             message.success(
@@ -285,15 +284,16 @@ export default function ThuaDat() {
 
             setOpenTachThua(false);
 
-            fetchData();
+            await fetchData();
 
             return true;
 
         } catch (err) {
 
+            console.error(err);
+
             message.error(
-                err.response?.data?.message ||
-                "Tách thửa thất bại"
+                err.message || "Tách thửa thất bại"
             );
 
             return false;

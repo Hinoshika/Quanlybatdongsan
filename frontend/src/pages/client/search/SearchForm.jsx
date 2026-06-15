@@ -26,9 +26,9 @@ const SearchForm = ({
                         Tìm theo CCCD
                     </Radio.Button>
 
-                    <Radio.Button value="address">
+                    {/* <Radio.Button value="address">
                         Tìm theo địa chỉ
-                    </Radio.Button>
+                    </Radio.Button> */}
 
                     <Radio.Button value="map">
                         Tìm trên bản đồ

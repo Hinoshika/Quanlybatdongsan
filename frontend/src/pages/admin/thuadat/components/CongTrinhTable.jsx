@@ -22,7 +22,11 @@ export default function CongTrinhTable({
                     {
                         title: "Loại",
                         dataIndex: "loai_cong_trinh"
-                    }
+                    },
+                    // {
+                    //     title: "Địa chỉ",
+                    //     dataIndex: "dia_chi"
+                    // }
                 ]}
             />
         </div>

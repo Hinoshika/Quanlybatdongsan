@@ -1,4 +1,5 @@
 const CongTrinhModel = require("../models/congTrinh.model");
+const LichSuChinhSuaService = require("../services/lichSuChinhSua.service");
 
 const parseGeom = (geom) => {
 
@@ -107,7 +108,7 @@ const CongTrinhService = {
     },
 
     // ================= CREATE =================
-    create: async (data) => {
+    create: async (data, user) => {
 
         if (!data.ten_cong_trinh?.trim()) {
             throw new Error("Thiếu tên công trình");
@@ -120,14 +121,9 @@ const CongTrinhService = {
         const payload = { ...data };
 
         // lat/lng -> geom
-        if (
-            payload.lat != null &&
-            payload.lng != null
-        ) {
-
+        if (payload.lat != null && payload.lng != null) {
             payload.geom = {
                 type: "Point",
-
                 coordinates: [
                     Number(payload.lng),
                     Number(payload.lat)
@@ -135,9 +131,20 @@ const CongTrinhService = {
             };
         }
 
-        return await CongTrinhModel.create(
-            payload
-        );
+        const created = await CongTrinhModel.create(payload);
+
+        // ================= LOG =================
+        await LichSuChinhSuaService.log({
+            user: user || { id: 1 },
+            action: "CREATE",
+            object: "CONG_TRINH",
+            objectId: created.id,
+            oldData: null,
+            newData: created,
+            reason: "Tạo công trình mới"
+        });
+
+        return created;
     },
 
     // ================= UPDATE =================

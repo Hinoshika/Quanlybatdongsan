@@ -66,7 +66,7 @@ export default function ThuaDatModal({
                         label="Số thửa"
                         rules={[{ required: true }]}
                     >
-                        <Input disabled />
+                        <Input />
                     </Form.Item>
 
                     <Form.Item
@@ -74,7 +74,7 @@ export default function ThuaDatModal({
                         label="Số tờ bản đồ"
                         rules={[{ required: true }]}
                     >
-                        <Input disabled />
+                        <Input />
                     </Form.Item>
 
                     <Form.Item
@@ -169,7 +169,7 @@ export default function ThuaDatModal({
                         name="nguon_goc_su_dung"
                         label="Nguồn gốc sử dụng"
                     >
-                        <Input disabled />
+                        <Input />
                     </Form.Item>
                 </div>
             </Form>

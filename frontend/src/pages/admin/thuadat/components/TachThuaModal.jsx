@@ -120,9 +120,14 @@ export default function TachThuaDrawer({ open, onClose, onSubmit }) {
                     );
                 }
 
-                const uniqueCoords = [
-                    ...new Map(coords.map(p => p.toString())).values()
-                ];
+                const uniqueCoords = Array.from(
+                    new Map(
+                        coords.map(p => [
+                            `${p[0]},${p[1]}`,
+                            p
+                        ])
+                    ).values()
+                );
 
                 uniqueCoords.push(uniqueCoords[0]); // đóng polygon
 

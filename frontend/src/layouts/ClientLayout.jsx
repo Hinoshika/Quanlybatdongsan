@@ -1,64 +1,90 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 
 import {
     Layout,
     Menu,
-    Input,
     Button,
     Avatar,
     Dropdown,
-    Modal,
-    Descriptions
+    Badge
 } from "antd";
 
 import {
     HomeOutlined,
-    BankOutlined,
-    UserOutlined,
     SearchOutlined,
     FileTextOutlined,
     LogoutOutlined,
-    InfoCircleOutlined
+    UserOutlined,
+    BellOutlined
 } from "@ant-design/icons";
 
+import axios from "axios";
 import LoginModal from "../components/LoginModal";
 
 const { Header, Content } = Layout;
 
 export default function ClientLayout() {
     const navigate = useNavigate();
+
     const [openLogin, setOpenLogin] = useState(false);
-    const [openInfo, setOpenInfo] = useState(false);
+    const [pendingCount, setPendingCount] = useState(0);
 
     const fullName = localStorage.getItem("full_name");
-    const email = localStorage.getItem("email");
-    const role = localStorage.getItem("role");
 
     const handleLogout = () => {
         localStorage.clear();
         window.location.reload();
     };
 
+    // ===== lấy số yêu cầu của user =====
+    const fetchPending = async () => {
+        try {
+            const res = await axios.get("http://localhost:5000/api/yeu-cau-user");
+
+            const count = res.data.filter(
+                item => item.trang_thai?.toUpperCase() === "CHO_XU_LY"
+            ).length;
+
+            setPendingCount(count);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    useEffect(() => {
+        if (fullName) {
+            fetchPending();
+
+            const interval = setInterval(fetchPending, 10000);
+            return () => clearInterval(interval);
+        }
+    }, []);
+
+    // ===== menu dropdown user =====
     const items = [
         {
             key: "profile",
+            icon: <UserOutlined />,
             label: "Trang cá nhân",
-            onClick: () => navigate("/profile")
+            onClick: () => navigate("/profile"),
+        },
+        {
+            key: "request-manage",
+            icon: <FileTextOutlined />,
+            label: "Quản lý yêu cầu",
+            onClick: () => navigate("/requestuser"),
+        },
+        {
+            type: "divider",
         },
         {
             key: "logout",
-            label: (
-                <span
-                    onClick={() => {
-                        localStorage.clear();
-                        window.location.reload();
-                    }}
-                >
-                    Đăng xuất
-                </span>
-            )
-        }
+            icon: <LogoutOutlined />,
+            danger: true,
+            label: "Đăng xuất",
+            onClick: handleLogout,
+        },
     ];
 
     return (
@@ -72,52 +98,69 @@ export default function ClientLayout() {
                     gap: 20,
                     padding: "0 16px",
                     height: 64,
-                    lineHeight: "64px",
                     position: "sticky",
                     top: 0,
-                    zIndex: 1000
+                    zIndex: 1000,
                 }}
             >
-                <div style={{ color: "white", fontSize: 18, fontWeight: "bold" }}>
+                <div
+                    style={{
+                        color: "white",
+                        fontSize: 18,
+                        fontWeight: "bold",
+                        cursor: "pointer"
+                    }}
+                    onClick={() => navigate("/")}
+                >
                     🏠 QL Nhà Đất
                 </div>
 
                 <Menu
                     theme="dark"
                     mode="horizontal"
-                    style={{
-                        flex: 1,
-                        borderBottom: "none"
-                    }}
+                    style={{ flex: 1, borderBottom: "none" }}
                     onClick={(e) => navigate(`/${e.key}`)}
                     items={[
                         { key: "", icon: <HomeOutlined />, label: "Trang chủ" },
                         { key: "search", icon: <SearchOutlined />, label: "Tìm kiếm" },
                         { key: "request", icon: <FileTextOutlined />, label: "Yêu cầu" },
-                        { key: "market", icon: <BankOutlined />, label: "Thị trường" },
-                        // { key: "user", icon: <UserOutlined />, label: "Người dùng" }
                     ]}
                 />
-                {/* 
-                <Input
-                    placeholder="Tìm kiếm..."
-                    prefix={<SearchOutlined />}
-                    style={{ width: 220 }}
-                /> */}
 
+                {/* ===== NOTIFICATION BELL ===== */}
+                {fullName && (
+                    <div
+                        style={{
+                            marginRight: 20,
+                            cursor: "pointer"
+                        }}
+                        onClick={() => navigate("/requestuser")}
+                    >
+                        <Badge count={pendingCount} size="small">
+                            <BellOutlined
+                                style={{
+                                    fontSize: 20,
+                                    color: "white"
+                                }}
+                            />
+                        </Badge>
+                    </div>
+                )}
+
+                {/* ===== USER ===== */}
                 {fullName ? (
-                    <Dropdown menu={{ items }} placement="bottomRight">
+                    <Dropdown menu={{ items }} trigger={["click"]}>
                         <div
                             style={{
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 10,
                                 color: "white",
-                                cursor: "pointer"
+                                cursor: "pointer",
                             }}
                         >
                             <Avatar style={{ backgroundColor: "#1677ff" }}>
-                                {fullName?.charAt(0)}
+                                {fullName?.charAt(0)?.toUpperCase()}
                             </Avatar>
                             <span>{fullName}</span>
                         </div>
@@ -133,35 +176,17 @@ export default function ClientLayout() {
             <Content
                 style={{
                     minHeight: "calc(100vh - 64px)",
-                    background: "#f5f5f5"
+                    background: "#f5f5f5",
                 }}
             >
                 <Outlet />
             </Content>
 
             {/* LOGIN MODAL */}
-            <LoginModal open={openLogin} onClose={() => setOpenLogin(false)} />
-
-            {/* USER INFO MODAL */}
-            <Modal
-                title="Thông tin tài khoản"
-                open={openInfo}
-                onCancel={() => setOpenInfo(false)}
-                footer={null}
-            >
-                <Descriptions column={1} bordered>
-                    <Descriptions.Item label="Họ tên">
-                        {fullName || "N/A"}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Email">
-                        {email || "N/A"}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Vai trò">
-                        {role || "USER"}
-                    </Descriptions.Item>
-                </Descriptions>
-            </Modal>
-
+            <LoginModal
+                open={openLogin}
+                onClose={() => setOpenLogin(false)}
+            />
         </Layout>
     );
 }

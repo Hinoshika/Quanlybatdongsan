@@ -20,37 +20,60 @@ const ThuaDatController = {
         }
     },
 
+    // ================= CREATE (FIXED) =================
     create: async (req, res) => {
         try {
-            await ThuaDatService.create(req.body);
+            const user = req.user || { id: 1 };
+
+            const result = await ThuaDatService.create(req.body, user);
 
             res.json({
                 success: true,
-                message: "Thêm thửa đất thành công"
+                data: result
             });
-
         } catch (err) {
-
-            res.status(400).json({
-                success: false,
-                message: err.message
-            });
+            res.status(400).json({ message: err.message });
         }
     },
 
+    // ================= UPDATE (FIXED) =================
     update: async (req, res) => {
         try {
-            await ThuaDatService.update(req.params.id, req.body);
-            res.json({ message: "Updated" });
+            const user = req.user || { id: 1 };
+            console.log("📌 CONTROLLER USER:", req.user);
+            const result = await ThuaDatService.update(
+                req.params.id,
+                req.body,
+                user
+            );
+
+            res.json({
+                success: true,
+                message: "Cập nhật thành công",
+                data: result
+            });
+
         } catch (err) {
+            console.error("📌 CONTROLLER ERROR:", err);
             res.status(500).json({ message: err.message });
         }
     },
 
+    // ================= DELETE (FIXED) =================
     delete: async (req, res) => {
         try {
-            await ThuaDatService.delete(req.params.id);
-            res.json({ message: "Deleted" });
+            const user = req.user || { id: 1 };
+            const result = await ThuaDatService.delete(
+                req.params.id,
+                user
+            );
+
+            res.json({
+                success: true,
+                message: "Xóa thành công",
+                data: result
+            });
+
         } catch (err) {
             res.status(500).json({ message: err.message });
         }
@@ -65,23 +88,20 @@ const ThuaDatController = {
         }
     },
 
-    // ================= CCCD SEARCH =================
     searchByCCCD: async (req, res) => {
         try {
-            const so_cccd = req.params.so_cccd;
-
-            const data = await ThuaDatService.searchByCCCD(so_cccd);
+            const data = await ThuaDatService.searchByCCCD(req.params.so_cccd);
 
             res.json({
                 total: data.length,
                 data
             });
+
         } catch (err) {
             res.status(500).json({ message: err.message });
         }
     },
 
-    // ================= SEARCH BY MAP (MỚI THÊM) =================
     searchByMap: async (req, res) => {
         try {
             const { lat, lng, radius } = req.query;
@@ -89,7 +109,7 @@ const ThuaDatController = {
             if (!lat || !lng) {
                 return res.status(400).json({
                     success: false,
-                    message: "Thiếu tham số lat hoặc lng"
+                    message: "Thiếu lat hoặc lng"
                 });
             }
 
@@ -100,25 +120,25 @@ const ThuaDatController = {
                 total: data.length,
                 data
             });
+
         } catch (err) {
-            console.error(err);
             res.status(500).json({
                 success: false,
-                message: err.message || "Lỗi server khi tìm kiếm theo bản đồ"
+                message: err.message
             });
         }
     },
-    // ================= GỘP THỬA =================
-    merge: async (req, res) => {
-        console.log("BODY:", req.body);
-        try {
 
+    // ================= MERGE =================
+    merge: async (req, res) => {
+        try {
+            const user = req.user || { id: 1 };
             const { thua_ids } = req.body;
 
-            const data =
-                await ThuaDatService.merge(
-                    thua_ids
-                );
+            const data = await ThuaDatService.merge(
+                thua_ids,
+                user
+            );
 
             res.json({
                 success: true,
@@ -127,24 +147,26 @@ const ThuaDatController = {
             });
 
         } catch (err) {
-
             res.status(400).json({
                 success: false,
                 message: err.message
             });
         }
     },
+
+    // ================= TACH =================
     tach: async (req, res) => {
-
-        console.log(
-            JSON.stringify(req.body, null, 2)
-        );
-
         try {
-            const result =
-                await ThuaDatService.tach(
-                    req.body
-                );
+            console.log("📌 TACH REQUEST BODY:");
+            console.log(JSON.stringify(req.body, null, 2));
+
+            console.log("📌 COORDS SAMPLE:");
+            console.log(req.body?.thua_con?.[0]?.coordinates);
+
+            const result = await ThuaDatService.tach(
+                req.body,
+                req.user || { id: 1 }
+            );
 
             res.json({
                 success: true,
@@ -153,15 +175,15 @@ const ThuaDatController = {
             });
 
         } catch (err) {
-
-            console.log(err);
+            console.error("❌ TACH ERROR:");
+            console.error(err);
 
             res.status(400).json({
                 success: false,
                 message: err.message
             });
         }
-    },
+    }
 };
 
 module.exports = ThuaDatController;

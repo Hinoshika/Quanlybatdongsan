@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Input, Modal } from "antd";
+import { Button, Input, Modal, message } from "antd";
 import dayjs from "dayjs";
 
 import {
@@ -80,15 +80,22 @@ export default function ChuSoHuu() {
                     ? values.ngay_sinh.format("YYYY-MM-DD")
                     : null,
             };
+
             if (mode === "edit") {
                 await updateChuSoHuu(selected.id, payload);
             } else {
                 await createChuSoHuu(payload);
             }
+
+            message.success("Lưu thành công");
             setOpenForm(false);
             fetchData();
         } catch (err) {
-            console.log(err);
+            console.log("BACKEND ERROR:", err.response?.data);
+
+            message.error(
+                err.response?.data?.message || "Có lỗi xảy ra"
+            );
         }
     };
 
@@ -109,6 +116,7 @@ export default function ChuSoHuu() {
                     fetchData();
                 } catch (err) {
                     console.log(err);
+                    message.error("Có lỗi xảy ra");
                 }
             },
         });
