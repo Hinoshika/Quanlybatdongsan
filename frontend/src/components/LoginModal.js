@@ -21,7 +21,10 @@ import {
 } from "react-router-dom";
 
 import {
-    login
+    login,
+    forgotPassword,
+    verifyOtp,
+    resetPassword
 } from "../services/auth.service";
 
 export default function LoginModal({
@@ -38,36 +41,37 @@ export default function LoginModal({
     // ================= FORGOT PASSWORD =================
 
     const [forgotOpen, setForgotOpen] = useState(false);
-
     const [forgotForm] = Form.useForm();
+
+    const [otpOpen, setOtpOpen] = useState(false);
+    const [otpForm] = Form.useForm();
+
+    const [changePassOpen, setChangePassOpen] = useState(false);
+    const [changePassForm] = Form.useForm();
+
+    const [usernameReset, setUsernameReset] = useState("");
+    const [otpValue, setOtpValue] = useState("");
 
     const handleForgotPassword = async (values) => {
 
         try {
 
-            const res = await fetch(
-                "http://localhost:3000/api/auth/forgot-password",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(values)
-                }
-            );
+            const res = await forgotPassword(values);
 
             const data = await res.json();
 
             if (!res.ok) {
-
                 alert(data.message);
-
                 return;
             }
 
             alert(data.message);
 
+            setUsernameReset(values.username);
+
             setForgotOpen(false);
+
+            setOtpOpen(true);
 
             forgotForm.resetFields();
 
@@ -75,6 +79,68 @@ export default function LoginModal({
 
             console.log(err);
 
+            alert("Không thể kết nối server");
+        }
+    };
+
+    const handleVerifyOtp = async (values) => {
+
+        try {
+
+            const res = await verifyOtp({
+                username: usernameReset,
+                otp: values.otp
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                alert(data.message);
+                return;
+            }
+
+            alert("OTP hợp lệ");
+
+            setOtpValue(values.otp); // 🔥 LƯU OTP LẠI
+
+            setOtpOpen(false);
+            setChangePassOpen(true);
+
+            otpForm.resetFields();
+
+        } catch (err) {
+            console.log(err);
+            alert("Không thể kết nối server");
+        }
+    };
+
+    const handleChangePassword = async (values) => {
+
+        try {
+
+            const res = await resetPassword({
+                username: usernameReset,
+                otp: otpValue, // 🔥 BẮT BUỘC PHẢI CÓ
+                newPassword: values.newPassword
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                alert(data.message);
+                return;
+            }
+
+            alert("Đổi mật khẩu thành công");
+
+            setChangePassOpen(false);
+
+            changePassForm.resetFields();
+
+            setOtpValue(""); // reset
+
+        } catch (err) {
+            console.log(err);
             alert("Không thể kết nối server");
         }
     };
@@ -255,8 +321,119 @@ export default function LoginModal({
 
             </Modal>
 
-            {/* FORGOT PASSWORD MODAL */}
+            <Modal
+                title="🔐 Xác thực OTP"
+                open={otpOpen}
+                onCancel={() => setOtpOpen(false)}
+                footer={null}
+                centered
+            >
+                <Form
+                    form={otpForm}
+                    layout="vertical"
+                    onFinish={handleVerifyOtp}
+                >
 
+                    <Form.Item
+                        label="Mã OTP"
+                        name="otp"
+                        rules={[
+                            {
+                                required: true,
+                                message: "Nhập OTP"
+                            }
+                        ]}
+                    >
+                        <Input
+                            prefix={<MailOutlined />}
+                            placeholder="Nhập mã OTP"
+                        />
+                    </Form.Item>
+
+                    <Button
+                        type="primary"
+                        htmlType="submit"
+                        block
+                    >
+                        Xác thực
+                    </Button>
+
+                </Form>
+            </Modal>
+
+            {/* FORGOT PASSWORD MODAL */}
+            <Modal
+                title="🔑 Đổi mật khẩu"
+                open={changePassOpen}
+                onCancel={() => setChangePassOpen(false)}
+                footer={null}
+                centered
+            >
+                <Form
+                    form={changePassForm}
+                    layout="vertical"
+                    onFinish={handleChangePassword}
+                >
+
+                    {/* Mật khẩu mới */}
+                    <Form.Item
+                        label="Mật khẩu mới"
+                        name="newPassword"
+                        rules={[
+                            {
+                                required: true,
+                                message: "Nhập mật khẩu mới"
+                            },
+                            {
+                                min: 6,
+                                message: "Tối thiểu 6 ký tự"
+                            }
+                        ]}
+                    >
+                        <Input.Password
+                            prefix={<LockOutlined />}
+                            placeholder="Mật khẩu mới"
+                        />
+                    </Form.Item>
+
+                    {/* Xác nhận mật khẩu */}
+                    <Form.Item
+                        label="Nhập lại mật khẩu"
+                        name="confirmPassword"
+                        dependencies={["newPassword"]}
+                        rules={[
+                            {
+                                required: true,
+                                message: "Nhập lại mật khẩu"
+                            },
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    if (!value || getFieldValue("newPassword") === value) {
+                                        return Promise.resolve();
+                                    }
+                                    return Promise.reject(
+                                        new Error("Mật khẩu không khớp")
+                                    );
+                                }
+                            })
+                        ]}
+                    >
+                        <Input.Password
+                            prefix={<LockOutlined />}
+                            placeholder="Nhập lại mật khẩu"
+                        />
+                    </Form.Item>
+
+                    <Button
+                        type="primary"
+                        htmlType="submit"
+                        block
+                    >
+                        Đổi mật khẩu
+                    </Button>
+
+                </Form>
+            </Modal>
             {/* FORGOT PASSWORD MODAL */}
 
             <Modal

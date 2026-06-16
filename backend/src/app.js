@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const authRoute = require("./routes/auth.route");
 const thuaDatRoutes = require("./routes/thuadat.route");
@@ -22,6 +23,16 @@ app.use(cors());
 app.use(express.json());
 
 // =====================
+// STATIC FILES
+// =====================
+app.use(
+    "/uploads",
+    express.static(
+        path.join(__dirname, "../uploads")
+    )
+);
+
+// =====================
 // ROUTES
 // =====================
 app.use("/api/auth", authRoute);
@@ -35,6 +46,7 @@ app.use("/api/so-huu-cong-trinh", soHuuCongTrinhRoutes);
 app.use("/api/yeu-cau", yeuCauRoutes);
 app.use("/api/chat", chatRoute);
 app.use("/api/lich-su-chinh-sua", lichSuChinhSuaRoutes);
+
 // =====================
 // HEALTH CHECK
 // =====================
@@ -55,7 +67,9 @@ app.use((err, req, res, next) => {
     console.error(err);
 
     res.status(500).json({
-        message: err.message || "Internal server error"
+        message:
+            err.message ||
+            "Internal server error"
     });
 });
 

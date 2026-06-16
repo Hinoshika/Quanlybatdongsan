@@ -2,24 +2,16 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const AuthModel = require("../models/auth.model");
 
+// ================= LOGIN =================
 exports.login = async ({ username, password }) => {
 
-    const rows =
-        await AuthModel.findByUsername(
-            username
-        );
+    const rows = await AuthModel.findByUsername(username);
 
     if (!rows.length) {
         throw new Error("Sai tài khoản");
     }
 
-    const roles = [
-        ...new Set(
-            rows
-                .map(r => r.role)
-                .filter(Boolean)
-        )
-    ];
+    const roles = [...new Set(rows.map(r => r.role).filter(Boolean))];
 
     const user = {
         id: rows[0].id,
@@ -30,14 +22,7 @@ exports.login = async ({ username, password }) => {
         roles
     };
 
-    if (!user.password) {
-        throw new Error("Thiếu password");
-    }
-
-    if (
-        user.password.trim() !==
-        password.trim()
-    ) {
+    if (user.password !== password) {
         throw new Error("Sai mật khẩu");
     }
 
@@ -50,9 +35,7 @@ exports.login = async ({ username, password }) => {
             roles: user.roles
         },
         process.env.JWT_SECRET,
-        {
-            expiresIn: "1d"
-        }
+        { expiresIn: "1d" }
     );
 
     return {
@@ -66,38 +49,26 @@ exports.login = async ({ username, password }) => {
         }
     };
 };
+
+// ================= FORGOT PASSWORD =================
 exports.forgotPassword = async (username) => {
 
-    const user =
-        await AuthModel.findEmailByUsername(
-            username
-        );
+    const user = await AuthModel.findEmailByUsername(username);
 
-    if (!user) {
-        throw new Error(
-            "Không tìm thấy tài khoản"
-        );
-    }
+    if (!user) throw new Error("Không tìm thấy tài khoản");
+    if (!user.email) throw new Error("Tài khoản chưa có email");
 
-    if (!user.email) {
-        throw new Error(
-            "Tài khoản chưa có email"
-        );
-    }
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const otp =
-        Math.floor(
-            100000 + Math.random() * 900000
-        ).toString();
+    await AuthModel.saveOtp(user.id, otp);
 
-    const transporter =
-        nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    });
 
     await transporter.sendMail({
         from: process.env.EMAIL_USER,
@@ -113,7 +84,43 @@ exports.forgotPassword = async (username) => {
 
     return {
         success: true,
-        message: "Đã gửi OTP tới email",
-        email: user.email
+        message: "Đã gửi OTP tới email"
+    };
+};
+
+// ================= VERIFY OTP =================
+exports.verifyOtp = async (username, otp) => {
+
+    const otpData = await AuthModel.verifyOtp(username, otp);
+
+    if (!otpData) {
+        throw new Error("OTP không đúng hoặc đã hết hạn");
+    }
+
+    return {
+        success: true,
+        message: "OTP hợp lệ"
+    };
+};
+
+// ================= RESET PASSWORD =================
+exports.resetPassword = async (username, otp, newPassword) => {
+
+    const otpData = await AuthModel.verifyOtp(username, otp);
+
+    if (!otpData) {
+        throw new Error("OTP không đúng hoặc đã hết hạn");
+    }
+
+    await AuthModel.updatePassword(
+        otpData.user_id,
+        newPassword
+    );
+
+    await AuthModel.markOtpUsed(otpData.id);
+
+    return {
+        success: true,
+        message: "Đổi mật khẩu thành công"
     };
 };

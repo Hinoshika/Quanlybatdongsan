@@ -122,7 +122,7 @@ export default function ClientLayout() {
                     onClick={(e) => navigate(`/${e.key}`)}
                     items={[
                         { key: "", icon: <HomeOutlined />, label: "Trang chủ" },
-                        { key: "search", icon: <SearchOutlined />, label: "Tìm kiếm" },
+                        { key: "search", icon: <SearchOutlined />, label: "Tra cứu" },
                         { key: "request", icon: <FileTextOutlined />, label: "Yêu cầu" },
                     ]}
                 />

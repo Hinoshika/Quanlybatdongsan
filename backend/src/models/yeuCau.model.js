@@ -41,16 +41,20 @@ const YeuCauModel = {
                 nguoi_gui_id,
                 loai_yeu_cau,
                 noi_dung,
+                tep_dinh_kem,
                 trang_thai
             )
-            VALUES ($1, $2, $3, 'CHO_XU_LY')
-            RETURNING id
+            VALUES ($1, $2, $3, $4, 'CHO_XU_LY')
+            RETURNING *
         `;
 
         const result = await db.query(sql, [
             data.nguoi_gui_id,
             data.loai_yeu_cau,
-            data.noi_dung
+            data.noi_dung,
+            JSON.stringify(
+                data.tep_dinh_kem || []
+            )
         ]);
 
         return result.rows[0];
@@ -66,7 +70,7 @@ const YeuCauModel = {
                 nguoi_xu_ly_id = $3,
                 ngay_xu_ly = NOW()
             WHERE id = $4
-            RETURNING id
+            RETURNING *
         `;
 
         const result = await db.query(sql, [
@@ -81,12 +85,16 @@ const YeuCauModel = {
 
     // ================= DELETE =================
     remove: async (id) => {
-        await db.query(
-            `DELETE FROM yeu_cau WHERE id = $1`,
+        const result = await db.query(
+            `
+            DELETE FROM yeu_cau
+            WHERE id = $1
+            RETURNING *
+            `,
             [id]
         );
 
-        return { id };
+        return result.rows[0];
     }
 };
 

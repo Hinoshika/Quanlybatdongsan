@@ -26,15 +26,36 @@ const YeuCauController = {
 
     create: async (req, res) => {
         try {
-            const data = await YeuCauService.create(req.body);
+
+            const payload = {
+                ...req.body,
+                tep_dinh_kem:
+                    req.files?.map(file => ({
+                        ten_file: file.originalname,
+                        duong_dan: file.path.replace(/\\/g, "/"),
+                        loai_file: file.mimetype,
+                        kich_thuoc: file.size
+                    })) || []
+            };
+
+            console.log(payload);
+
+            const data =
+                await YeuCauService.create(
+                    payload
+                );
+
             res.status(201).json(data);
+
         } catch (error) {
+
+            console.error(error);
+
             res.status(500).json({
                 message: error.message
             });
         }
     },
-
     update: async (req, res) => {
         try {
             const data = await YeuCauService.update(

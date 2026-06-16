@@ -11,6 +11,8 @@ import {
     message,
     Space,
     Popconfirm,
+    Image,
+    Typography
 } from "antd";
 
 import {
@@ -26,26 +28,39 @@ export default function XuLyYeuCau() {
     const [loading, setLoading] = useState(false);
 
     const { TextArea } = Input;
+    const { Link } = Typography;
     const [form] = Form.useForm();
 
     const fetchData = async () => {
         try {
-            setLoading(true);
-
             const result = await getYeuCau();
 
             setData(result || []);
+
+            if (selected) {
+                const current = result.find(
+                    item => item.id === selected.id
+                );
+
+                if (current) {
+                    setSelected(current);
+                }
+            }
         } catch (error) {
-            message.error(
-                error.message || "Không tải được dữ liệu"
-            );
-        } finally {
-            setLoading(false);
+            console.error(error);
         }
     };
 
     useEffect(() => {
         fetchData();
+
+        const interval = setInterval(() => {
+            fetchData();
+        }, 5000); // 5 giây
+
+        return () => {
+            clearInterval(interval);
+        };
     }, []);
 
     const handleOpen = (record) => {
@@ -165,7 +180,7 @@ export default function XuLyYeuCau() {
                     setSelected(null);
                 }}
                 footer={null}
-                width={800}
+                width={900}
             >
                 {selected && (
                     <>
@@ -190,15 +205,77 @@ export default function XuLyYeuCau() {
                                 {selected.ngay_gui
                                     ? new Date(
                                         selected.ngay_gui
-                                    ).toLocaleString(
-                                        "vi-VN"
-                                    )
+                                    ).toLocaleString("vi-VN")
                                     : ""}
                             </Descriptions.Item>
 
                             <Descriptions.Item label="Trạng thái">
                                 {renderStatus(
                                     selected.trang_thai
+                                )}
+                            </Descriptions.Item>
+
+                            <Descriptions.Item label="Tệp đính kèm">
+                                {selected.tep_dinh_kem &&
+                                    selected.tep_dinh_kem.length >
+                                    0 ? (
+                                    <Space
+                                        direction="vertical"
+                                        style={{
+                                            width: "100%",
+                                        }}
+                                    >
+                                        {selected.tep_dinh_kem.map(
+                                            (
+                                                file,
+                                                index
+                                            ) => {
+                                                const fileUrl =
+                                                    `http://localhost:5000/${file.duong_dan}`;
+
+                                                const isImage =
+                                                    file.loai_file?.startsWith(
+                                                        "image/"
+                                                    );
+
+                                                return (
+                                                    <div
+                                                        key={
+                                                            index
+                                                        }
+                                                    >
+                                                        {isImage && (
+                                                            <>
+                                                                <Image
+                                                                    width={
+                                                                        200
+                                                                    }
+                                                                    src={
+                                                                        fileUrl
+                                                                    }
+                                                                />
+
+                                                                <br />
+                                                            </>
+                                                        )}
+
+                                                        <Link
+                                                            href={
+                                                                fileUrl
+                                                            }
+                                                            target="_blank"
+                                                        >
+                                                            {
+                                                                file.ten_file
+                                                            }
+                                                        </Link>
+                                                    </div>
+                                                );
+                                            }
+                                        )}
+                                    </Space>
+                                ) : (
+                                    "Không có tệp đính kèm"
                                 )}
                             </Descriptions.Item>
                         </Descriptions>

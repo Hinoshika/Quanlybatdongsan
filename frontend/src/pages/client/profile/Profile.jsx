@@ -9,6 +9,7 @@ export default function Profile() {
     const role = localStorage.getItem("role");
     const cccd = localStorage.getItem("cccd");
     const address = localStorage.getItem("address");
+    const phone = localStorage.getItem("phone");
 
     return (
         <div style={{ padding: 20, display: "flex", justifyContent: "center" }}>

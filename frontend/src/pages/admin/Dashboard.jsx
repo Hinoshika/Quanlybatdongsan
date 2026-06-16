@@ -126,7 +126,7 @@ export default function Dashboard() {
             }}>
                 <div>
                     <Title level={2} style={{ margin: 0, color: "#1f2937" }}>
-                        📊 Dashboard Quản Lý Đất Đai
+                        📊 Dashboard Quản Lý Bất Động Sản
                     </Title>
                     {/* <Text type="secondary">Cập nhật thời gian thực • Hôm nay: {new Date().toLocaleDateString('vi-VN')}</Text> */}
                 </div>

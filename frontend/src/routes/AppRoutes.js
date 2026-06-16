@@ -18,6 +18,7 @@ import User from "../pages/admin/user/User";
 import BienDong from "../pages/admin/biendong/BienDong";
 import XuLyYeuCau from "../pages/admin/yeucau/XuLyYeuCau";
 import SystemHistory from "../pages/admin/system-history/SystemHistory";
+import Settings from "../pages/admin/settings/Settings";
 
 export default function AppRoutes() {
 
@@ -54,6 +55,8 @@ export default function AppRoutes() {
                     <Route path="xu-ly-yeu-cau" element={<XuLyYeuCau />} />
 
                     <Route path="system-history" element={<SystemHistory />} />
+
+                    <Route path="settings" element={<Settings />} />
 
                 </Route>
 
