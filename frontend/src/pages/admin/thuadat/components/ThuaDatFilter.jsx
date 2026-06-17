@@ -17,9 +17,12 @@ export default function ThuaDatFilter({
             style={{
                 display: "flex",
                 gap: 10,
-                flexWrap: "wrap",
-                marginTop: 12
+                marginTop: 12,
+                alignItems: "center",
+                overflowX: "auto",
+                whiteSpace: "nowrap"
             }}
+
         >
 
             <Input
@@ -37,7 +40,7 @@ export default function ThuaDatFilter({
 
             <Select
                 placeholder="Loại đất"
-                style={{ width: 150 }}
+                style={{ width: 300 }}
                 allowClear
                 value={filters.loai_dat}
                 onChange={(v) =>
@@ -47,21 +50,21 @@ export default function ThuaDatFilter({
                     })
                 }
                 options={[
-                    { value: "TP Hà Nội", label: "TPHà Nội" },
-                    { value: "TP HCM", label: "TP Hồ Chí Minh" },
-                    { value: "TP Đà Nẵng", label: "TP Đà Nẵng" },
-                    { value: "TP. Hải Phòng", label: "TP. Hải Phòng" },
-                    { value: "TP HCM", label: "TP Hồ Chí Minh" },
-                    { value: "TP. Cần Thơ", label: "TP. Cần Thơ" },
-                    { value: "TP. Huế", label: "TP. Huế" },
-                    { value: "Tuyên Quang", label: "Tuyên Quang" },
-                    { value: "Lào Cai", label: "Lào Cai" },
+                    { value: "Đất ở", label: "Đất ở" },
+                    { value: "Đất nông nghiệp", label: "Đất nông nghiệp" },
+                    { value: "Đất thương mại", label: "Đất thương mại" },
+                    { value: "Đất xây dựng trụ sở cơ quan", label: "Đất xây dựng trụ sở cơ quan." },
+                    { value: "Đất quốc phòng, an ninh", label: "Đất quốc phòng, an ninh." },
+                    { value: "Đất xây dựng công trình sự nghiệp", label: "Đất xây dựng công trình sự nghiệp" },
+                    { value: "Đất sử dụng cho mục đích công cộng", label: "Đất sử dụng cho mục đích công cộng" },
+                    { value: "Đất sản xuất, kinh doanh phi nông nghiệp", label: "Đất sản xuất, kinh doanh phi nông nghiệp" },
+                    { value: "Đất lâm nghiệp", label: "Đất lâm nghiệp" },
                 ]}
             />
 
             <Select
                 placeholder="Trạng thái"
-                style={{ width: 160 }}
+                style={{ width: 150 }}
                 allowClear
                 value={filters.trang_thai}
                 onChange={(v) =>
@@ -104,12 +107,20 @@ export default function ThuaDatFilter({
 
             <Button
                 type="primary"
+                style={{
+                    flexShrink: 0
+                }}
                 onClick={onSearch}
             >
                 🔍 Tìm kiếm
             </Button>
 
-            <Button onClick={onReset}>
+            <Button
+                style={{
+                    flexShrink: 0
+                }}
+                onClick={onReset}
+            >
                 Reset
             </Button>
 

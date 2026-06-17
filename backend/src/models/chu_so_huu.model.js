@@ -205,7 +205,33 @@ const ChuSoHuu = {
     `, [so_cccd]);
 
         return result.rows[0];
-    }
+    },
+    checkTaiSanDangSoHuu: async (id) => {
+
+        const result = await db.query(`
+        SELECT
+            (
+                SELECT COUNT(*)
+                FROM so_huu_thua_dat sh
+                JOIN thua_dat td
+                    ON td.id = sh.thua_dat_id
+                WHERE sh.chu_so_huu_id = $1
+                AND td.deleted_at IS NULL
+            ) AS so_thua_dat,
+
+            (
+                SELECT COUNT(*)
+                FROM so_huu_cong_trinh sch
+                JOIN cong_trinh ct
+                    ON ct.id = sch.cong_trinh_id
+                WHERE sch.chu_so_huu_id = $1
+                AND ct.deleted_at IS NULL
+            ) AS so_cong_trinh
+    `, [id]);
+
+
+        return result.rows[0];
+    },
 };
 
 module.exports = ChuSoHuu;

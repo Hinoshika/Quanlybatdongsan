@@ -76,14 +76,18 @@ export default function SystemHistory() {
         CREATE: "green",
         UPDATE: "orange",
         DELETE: "red",
-        LOGIN: "blue"
+        LOGIN: "blue",
+        TACH: "purple",
+        GOP: "cyan"
     };
 
     const actionLabel = {
         CREATE: "Tạo mới",
         UPDATE: "Cập nhật",
         DELETE: "Xóa",
-        LOGIN: "Đăng nhập"
+        LOGIN: "Đăng nhập",
+        TACH: "Tách thửa",
+        GOP: "Gộp thửa"
     };
 
     const objectLabel = {

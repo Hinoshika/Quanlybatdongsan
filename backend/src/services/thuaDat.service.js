@@ -35,32 +35,142 @@ const ThuaDatService = {
 
     create: async (data, user) => {
 
-        if (data.polygon?.length >= 3) {
-            const overlaps = await ThuaDatModel.checkOverlap(data.polygon);
 
-            if (overlaps.length > 0) {
-                const ds = overlaps
-                    .map(x => `Thửa ${x.so_thua}/Tờ ${x.so_to_ban_do}`)
-                    .join(", ");
+        // ================= CHECK POLYGON =================
+
+        if (
+            !Array.isArray(data.polygon) ||
+            data.polygon.length < 3
+        ) {
+
+            const error = new Error(
+                "Polygon phải có ít nhất 3 điểm tọa độ"
+            );
+
+            error.status = 400;
+            throw error;
+        }
+
+
+
+        // ================= CHECK TỪNG ĐIỂM =================
+
+        for (const point of data.polygon) {
+
+
+            if (
+                !Array.isArray(point) ||
+                point.length !== 2
+            ) {
 
                 const error = new Error(
-                    `Tọa độ bị chồng lấn với thửa đất: ${ds}`
+                    "Tọa độ polygon không đúng định dạng"
                 );
 
                 error.status = 400;
                 throw error;
             }
-        }
 
-        const created = await ThuaDatModel.create(data);
+
+
+            const [lat, lng] = point;
+
+
+
+            if (
+                isNaN(lat) ||
+                isNaN(lng)
+            ) {
+
+                const error = new Error(
+                    "Vĩ độ và kinh độ phải là số"
+                );
+
+                error.status = 400;
+                throw error;
+            }
+
+
+
+            // kiểm tra latitude
+
+            if (
+                Number(lat) < -90 || Number(lat) > 90 || Number(lng) < -180 || Number(lng) > 180
+            ) {
+
+                const error = new Error(
+                    `Tọa độ không hợp lệ`
+                );
+
+                error.status = 400;
+                throw error;
+            }
+
+        }
+        // ================= CHECK ĐIỂM ĐẦU CUỐI =================
+
+        const first =
+            data.polygon[0];
+
+        const last =
+            data.polygon[data.polygon.length - 1];
+
+
+        if (
+            first[0] !== last[0] ||
+            first[1] !== last[1]
+        ) {
+
+            data.polygon.push([
+                first[0],
+                first[1]
+            ]);
+
+        }
+        // ================= CHECK CHỒNG LẤN =================
+        const overlaps =
+            await ThuaDatModel.checkOverlap(
+                data.polygon
+            );
+        if (overlaps.length > 0) {
+            const ds =
+                overlaps
+                    .map(
+                        x =>
+                            `Thửa ${x.so_thua}/Tờ ${x.so_to_ban_do}`
+                    )
+                    .join(", ");
+
+            const error =
+                new Error(
+                    `Tọa độ bị chồng lấn với thửa đất: ${ds}`
+                );
+
+
+            error.status = 400;
+
+            throw error;
+        }
+        // ================= CREATE =================
+
+        const created =
+            await ThuaDatModel.create(data);
+        // ================= HISTORY =================
 
         await LichSuChinhSuaService.log({
+
             user,
+
             action: "CREATE",
+
             object: "THUA_DAT",
+
             objectId: created.id,
+
             newData: created,
+
             reason: "Tạo thửa đất mới"
+
         });
 
         return created;

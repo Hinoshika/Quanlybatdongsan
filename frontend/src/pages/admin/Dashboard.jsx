@@ -15,6 +15,7 @@ const API_THUA_DAT = "http://localhost:5000/api/thua-dat";
 const API_CONG_TRINH = "http://localhost:5000/api/cong-trinh";
 const API_CHU_SO_HUU = "http://localhost:5000/api/chu-so-huu";
 const API_BIEN_DONG = "http://localhost:5000/api/bien-dong";
+const API_YEU_CAU = "http://localhost:5000/api/yeu-cau";
 
 export default function Dashboard() {
     const [loading, setLoading] = useState(true);
@@ -25,20 +26,37 @@ export default function Dashboard() {
         bienDong: 0,
     });
     const [animated, setAnimated] = useState(stats);
-
+    const [yeuCauStats, setYeuCauStats] = useState({
+        tong: 0,
+        choXuLy: 0,
+        daDuyet: 0,
+        tuChoi: 0,
+    });
     useEffect(() => {
-        fetchData();
+
+        fetchData(true);
+
+        const interval = setInterval(() => {
+            fetchData(false);
+        }, 60000);
+
+
+        return () => clearInterval(interval);
+
     }, []);
 
     const fetchData = async () => {
         setLoading(true);
+
         try {
-            const [td, ct, csh, bd] = await Promise.all([
-                axios.get(API_THUA_DAT),
-                axios.get(API_CONG_TRINH),
-                axios.get(API_CHU_SO_HUU),
-                axios.get(API_BIEN_DONG),
-            ]);
+            const [td, ct, csh, bd, yc] =
+                await Promise.all([
+                    axios.get(API_THUA_DAT),
+                    axios.get(API_CONG_TRINH),
+                    axios.get(API_CHU_SO_HUU),
+                    axios.get(API_BIEN_DONG),
+                    axios.get(API_YEU_CAU),
+                ]);
 
             const data = {
                 thuaDat: td.data.length,
@@ -49,6 +67,23 @@ export default function Dashboard() {
 
             setStats(data);
             animateNumbers(data);
+
+            // ===== THỐNG KÊ YÊU CẦU =====
+            const yeuCau = yc.data || [];
+
+            setYeuCauStats({
+                tong: yeuCau.length,
+                choXuLy: yeuCau.filter(
+                    x => x.trang_thai === "CHO_XU_LY"
+                ).length,
+                daDuyet: yeuCau.filter(
+                    x => x.trang_thai === "DA_DUYET"
+                ).length,
+                tuChoi: yeuCau.filter(
+                    x => x.trang_thai === "TU_CHOI"
+                ).length,
+            });
+
         } catch (err) {
             console.error(err);
         } finally {
@@ -218,6 +253,113 @@ export default function Dashboard() {
                         ))}
                     </Row>
 
+                    <Card
+                        style={{
+                            marginTop: 32,
+                            borderRadius: 16,
+                            boxShadow: "0 8px 25px rgba(0,0,0,0.06)"
+                        }}
+                    >
+                        <Title level={4}>
+                            📨 Thống kê yêu cầu
+                        </Title>
+
+                        <Row gutter={[16, 16]}>
+                            <Col xs={24} md={6}>
+                                <Card>
+                                    <div
+                                        style={{
+                                            fontSize: 28,
+                                            fontWeight: 700,
+                                            color: "#1677ff"
+                                        }}
+                                    >
+                                        {yeuCauStats.tong}
+                                    </div>
+                                    <Text>Tổng yêu cầu</Text>
+                                </Card>
+                            </Col>
+
+                            <Col xs={24} md={6}>
+                                <Card>
+                                    <div
+                                        style={{
+                                            fontSize: 28,
+                                            fontWeight: 700,
+                                            color: "#faad14"
+                                        }}
+                                    >
+                                        {yeuCauStats.choXuLy}
+                                    </div>
+                                    <Text>Chờ xử lý</Text>
+                                </Card>
+                            </Col>
+
+                            <Col xs={24} md={6}>
+                                <Card>
+                                    <div
+                                        style={{
+                                            fontSize: 28,
+                                            fontWeight: 700,
+                                            color: "#52c41a"
+                                        }}
+                                    >
+                                        {yeuCauStats.daDuyet}
+                                    </div>
+                                    <Text>Đã duyệt</Text>
+                                </Card>
+                            </Col>
+
+                            <Col xs={24} md={6}>
+                                <Card>
+                                    <div
+                                        style={{
+                                            fontSize: 28,
+                                            fontWeight: 700,
+                                            color: "#f5222d"
+                                        }}
+                                    >
+                                        {yeuCauStats.tuChoi}
+                                    </div>
+                                    <Text>Từ chối</Text>
+                                </Card>
+                            </Col>
+                        </Row>
+                    </Card>
+                    <Card
+                        style={{
+                            marginTop: 24,
+                            borderRadius: 16
+                        }}
+                    >
+                        <Title level={5}>
+                            Tỷ lệ xử lý yêu cầu
+                        </Title>
+
+                        <Progress
+                            percent={
+                                yeuCauStats.tong > 0
+                                    ? Math.round(
+                                        ((yeuCauStats.daDuyet +
+                                            yeuCauStats.tuChoi) *
+                                            100) /
+                                        yeuCauStats.tong
+                                    )
+                                    : 0
+                            }
+                            status="active"
+                        />
+
+                        <div style={{ marginTop: 10 }}>
+                            Đã xử lý:
+                            {" "}
+                            {yeuCauStats.daDuyet +
+                                yeuCauStats.tuChoi}
+                            /
+                            {" "}
+                            {yeuCauStats.tong}
+                        </div>
+                    </Card>
                     {/* Insights Section */}
                     <Card
                         style={{

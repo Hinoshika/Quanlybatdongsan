@@ -172,24 +172,15 @@ export default function AddThuaDatModal({
                         >
                             <Select
                                 options={[
-                                    {
-                                        value:
-                                            "dat_o",
-                                        label:
-                                            "Đất ở"
-                                    },
-                                    {
-                                        value:
-                                            "dat_nong_nghiep",
-                                        label:
-                                            "Đất nông nghiệp"
-                                    },
-                                    {
-                                        value:
-                                            "dat_thuong_mai",
-                                        label:
-                                            "Đất thương mại"
-                                    }
+                                    { value: "Đất ở", label: "Đất ở" },
+                                    { value: "Đất nông nghiệp", label: "Đất nông nghiệp" },
+                                    { value: "Đất thương mại", label: "Đất thương mại" },
+                                    { value: "Đất xây dựng trụ sở cơ quan", label: "Đất xây dựng trụ sở cơ quan." },
+                                    { value: "Đất quốc phòng, an ninh", label: "Đất quốc phòng, an ninh." },
+                                    { value: "Đất xây dựng công trình sự nghiệp", label: "Đất xây dựng công trình sự nghiệp" },
+                                    { value: "Đất sử dụng cho mục đích công cộng", label: "Đất sử dụng cho mục đích công cộng" },
+                                    { value: "Đất sản xuất, kinh doanh phi nông nghiệp", label: "Đất sản xuất, kinh doanh phi nông nghiệp" },
+                                    { value: "Đất lâm nghiệp", label: "Đất lâm nghiệp" },
                                 ]}
                             />
                         </Form.Item>
@@ -212,10 +203,21 @@ export default function AddThuaDatModal({
 
                     <Col span={8}>
                         <Form.Item
-                            label="Tỉnh / Thành phố"
                             name="tinh"
+                            label="Tỉnh"
+                            rules={[{ required: true }]}
                         >
-                            <Input />
+                            <Select options={[
+                                { value: "TP Hà Nội", label: "TPHà Nội" },
+                                { value: "TP HCM", label: "TP Hồ Chí Minh" },
+                                { value: "TP Đà Nẵng", label: "TP Đà Nẵng" },
+                                { value: "TP. Hải Phòng", label: "TP. Hải Phòng" },
+                                { value: "TP HCM", label: "TP Hồ Chí Minh" },
+                                { value: "TP. Cần Thơ", label: "TP. Cần Thơ" },
+                                { value: "TP. Huế", label: "TP. Huế" },
+                                { value: "Tuyên Quang", label: "Tuyên Quang" },
+                                { value: "Lào Cai", label: "Lào Cai" },
+                            ]} />
                         </Form.Item>
                     </Col>
 
@@ -237,24 +239,10 @@ export default function AddThuaDatModal({
                         >
                             <Select
                                 options={[
-                                    {
-                                        value:
-                                            "dang_su_dung",
-                                        label:
-                                            "Đang sử dụng"
-                                    },
-                                    {
-                                        value:
-                                            "tranh_chap",
-                                        label:
-                                            "Tranh chấp"
-                                    },
-                                    {
-                                        value:
-                                            "chuyen_nhuong",
-                                        label:
-                                            "Đã chuyển nhượng"
-                                    }
+                                    { value: "Đang sử dụng", label: "Đang sử dụng" },
+                                    { value: "Chưa sử dụng", label: "Chưa sử dụng" },
+                                    { value: "Tranh chấp", label: "Tranh chấp" },
+                                    { value: "Thu hồi", label: "Thu hồi" }
                                 ]}
                             />
                         </Form.Item>

@@ -36,9 +36,9 @@ const getLoaiLabel = (v) => {
 
 const getColor = (v) => {
     switch (v) {
-        case "CHUYEN_NHUONG": return "red";
-        case "CAP_NHAT": return "orange";
-        case "TAO_MOI": return "green";
+        case "chuyen_nhuong": return "red";
+        case "mua_ban": return "orange";
+        case "tang_cho": return "green";
         case "XOA": return "gray";
         case "TACH_THUA": return "blue";
         case "GOP_THUA": return "purple";

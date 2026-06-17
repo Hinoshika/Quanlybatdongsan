@@ -108,15 +108,31 @@ export default function ChuSoHuu() {
             cancelText: "Hủy",
             okType: "danger",
             centered: true,
+
             onOk: async () => {
                 try {
+
                     await deleteChuSoHuu(id);
+
+                    message.success(
+                        "Xóa chủ sở hữu thành công"
+                    );
+
                     setOpenForm(false);
                     setSelected(null);
+
                     fetchData();
+
                 } catch (err) {
-                    console.log(err);
-                    message.error("Có lỗi xảy ra");
+
+                    console.log("DELETE ERROR:", err);
+
+                    const msg =
+                        err?.response?.data?.message ||
+                        err?.message ||
+                        "Có lỗi xảy ra";
+
+                    message.error(msg);
                 }
             },
         });

@@ -332,6 +332,24 @@ export default function CongTrinhModal({
                     </Form.Item>
 
                     <Form.Item
+                        name="hinh_thuc_so_huu"
+                        label="Hình thức sở hữu"
+                    >
+                        <Select options={[
+                            { value: "Sử hữu Chung", label: "Sử hữu Chung" },
+                            { value: "Sử hữu Riêng", label: "Sử hữu Riêng" },
+                            { value: "Sử hữu Nhà Nước", label: "Sử hữu Nhà Nước" }
+                        ]} />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="thoi_han_so_huu"
+                        label="Thời hạn sở hữu"
+                    >
+                        <Input />
+                    </Form.Item>
+
+                    <Form.Item
                         name="trang_thai"
                         label="Trạng thái"
                     >
@@ -351,23 +369,6 @@ export default function CongTrinhModal({
                                 }
                             ]}
                         />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="hinh_thuc_so_huu"
-                        label="Hình thức sở hữu"
-                    >
-                        <Select options={[
-                            { value: "Sử hữu Chung", label: "Sử hữu Chung" },
-                            { value: "Sử hữu Riêng", label: "Sử hữu Riêng" },
-                        ]} />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="thoi_han_so_huu"
-                        label="Thời hạn sở hữu"
-                    >
-                        <Input />
                     </Form.Item>
 
                 </Form>

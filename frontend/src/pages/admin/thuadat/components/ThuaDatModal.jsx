@@ -104,19 +104,6 @@ export default function ThuaDatModal({
                     </Form.Item>
 
                     <Form.Item
-                        name="trang_thai"
-                        label="Trạng thái"
-                        rules={[{ required: true }]}
-                    >
-                        <Select options={[
-                            { value: "Đang sử dụng", label: "Đang sử dụng" },
-                            { value: "Chưa sử dụng", label: "Chưa sử dụng" },
-                            { value: "Tranh chấp", label: "Tranh chấp" },
-                            { value: "Thu hồi", label: "Thu hồi" }
-                        ]} />
-                    </Form.Item>
-
-                    <Form.Item
                         name="tinh"
                         label="Tỉnh"
                         rules={[{ required: true }]}
@@ -152,10 +139,7 @@ export default function ThuaDatModal({
                         name="hinh_thuc_su_dung"
                         label="Hình thức sử dụng"
                     >
-                        <Select options={[
-                            { value: "Sử Dụng Chung", label: "Sử Dụng Chung" },
-                            { value: "Sử Dụng Riêng", label: "Sử Dụng Riêng" },
-                        ]} />
+                        <Input />
                     </Form.Item>
 
                     <Form.Item
@@ -170,6 +154,19 @@ export default function ThuaDatModal({
                         label="Nguồn gốc sử dụng"
                     >
                         <Input />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="trang_thai"
+                        label="Trạng thái"
+                        rules={[{ required: true }]}
+                    >
+                        <Select options={[
+                            { value: "Đang sử dụng", label: "Đang sử dụng" },
+                            { value: "Chưa sử dụng", label: "Chưa sử dụng" },
+                            { value: "Tranh chấp", label: "Tranh chấp" },
+                            { value: "Thu hồi", label: "Thu hồi" }
+                        ]} />
                     </Form.Item>
                 </div>
             </Form>
