@@ -13,6 +13,8 @@ const soHuuCongTrinhRoutes = require("./routes/soHuuCongTrinh.route");
 const yeuCauRoutes = require("./routes/yeuCau.routes");
 const chatRoute = require("./routes/chat.route");
 const lichSuChinhSuaRoutes = require("./routes/lichSuChinhSua.routes");
+const vanBanRoutes = require("./routes/vanBan.route");
+const fileRouter = require("./routes/file.route");
 
 const app = express();
 
@@ -25,12 +27,10 @@ app.use(express.json());
 // =====================
 // STATIC FILES
 // =====================
-app.use(
-    "/uploads",
-    express.static(
-        path.join(__dirname, "../uploads")
-    )
-);
+// =====================
+// STATIC FILES
+// =====================
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // =====================
 // ROUTES
@@ -46,31 +46,31 @@ app.use("/api/so-huu-cong-trinh", soHuuCongTrinhRoutes);
 app.use("/api/yeu-cau", yeuCauRoutes);
 app.use("/api/chat", chatRoute);
 app.use("/api/lich-su-chinh-sua", lichSuChinhSuaRoutes);
+app.use("/api/van-ban", vanBanRoutes);
+app.use("/api/file", fileRouter);
 
 // =====================
 // HEALTH CHECK
 // =====================
 app.get("/", (req, res) => {
-    res.json({
-        status: "OK",
-        message: "Backend running"
-    });
+  res.json({
+    status: "OK",
+    message: "Backend running",
+  });
 });
 
 app.use((req, res) => {
-    res.status(404).json({
-        message: "Route not found"
-    });
+  res.status(404).json({
+    message: "Route not found",
+  });
 });
 
 app.use((err, req, res, next) => {
-    console.error(err);
+  console.error(err);
 
-    res.status(500).json({
-        message:
-            err.message ||
-            "Internal server error"
-    });
+  res.status(500).json({
+    message: err.message || "Internal server error",
+  });
 });
 
 module.exports = app;

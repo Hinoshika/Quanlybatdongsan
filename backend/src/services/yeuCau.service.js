@@ -1,132 +1,109 @@
 const YeuCauModel = require("../models/yeuCau.model");
 const LichSuChinhSuaService = require("../services/lichSuChinhSua.service");
 
-
 const YeuCauService = {
+  // ================= GET ALL =================
 
-    // ================= GET ALL =================
-    getAll: async () => {
-        return await YeuCauModel.getAll();
-    },
+  getAll: async () => {
+    return await YeuCauModel.getAll();
+  },
 
+  // ================= GET BY ID =================
 
-    // ================= GET BY ID =================
-    getById: async (id) => {
-        return await YeuCauModel.getById(id);
-    },
+  getById: async (id) => {
+    return await YeuCauModel.getById(id);
+  },
 
+  // ================= CREATE =================
 
-    // ================= CREATE =================
-    create: async (data, user) => {
+  create: async (data, user) => {
+    const created = await YeuCauModel.create(data);
 
-        const created =
-            await YeuCauModel.create(data);
+    await LichSuChinhSuaService.log({
+      user: user || {
+        id: 1,
+      },
 
+      action: "CREATE",
 
-        await LichSuChinhSuaService.log({
+      object: "YEU_CAU",
 
-            user: user || { id: 1 },
+      objectId: created.id,
 
-            action: "CREATE",
+      newData: created,
 
-            object: "YEU_CAU",
+      reason: "Tạo yêu cầu mới",
+    });
 
-            objectId: created.id,
+    return created;
+  },
 
-            newData: created,
+  // ================= UPDATE =================
 
-            reason: "Tạo yêu cầu mới"
+  update: async (id, data, user) => {
+    const old = await YeuCauModel.getById(id);
 
-        });
-
-
-        return created;
-    },
-
-
-    // ================= UPDATE =================
-    update: async (id, data, user) => {
-
-        const old =
-            await YeuCauModel.getById(id);
-
-
-        if (!old) {
-            throw new Error(
-                "Không tìm thấy yêu cầu"
-            );
-        }
-
-
-        const updated =
-            await YeuCauModel.update(
-                id,
-                data
-            );
-
-
-        await LichSuChinhSuaService.log({
-
-            user: user || { id: 1 },
-
-            action: "UPDATE",
-
-            object: "YEU_CAU",
-
-            objectId: id,
-
-            oldData: old,
-
-            newData: updated,
-
-            reason: "Cập nhật yêu cầu"
-
-        });
-
-
-        return updated;
-    },
-
-
-    // ================= DELETE =================
-    remove: async (id, user) => {
-
-        const old =
-            await YeuCauModel.getById(id);
-
-
-        if (!old) {
-            throw new Error(
-                "Không tìm thấy yêu cầu"
-            );
-        }
-
-
-        const result =
-            await YeuCauModel.remove(id);
-
-
-        await LichSuChinhSuaService.log({
-
-            user: user || { id: 1 },
-
-            action: "DELETE",
-
-            object: "YEU_CAU",
-
-            objectId: id,
-
-            oldData: old,
-
-            reason: "Xóa yêu cầu"
-
-        });
-
-
-        return result;
+    if (!old) {
+      throw new Error("Không tìm thấy yêu cầu");
     }
 
-};
+    const updated = await YeuCauModel.update(id, data);
 
+    await LichSuChinhSuaService.log({
+      user: user || {
+        id: 1,
+      },
+
+      action: "UPDATE",
+
+      object: "YEU_CAU",
+
+      objectId: id,
+
+      oldData: old,
+
+      newData: updated,
+
+      reason: `
+                Cập nhật trạng thái:
+                ${old.trang_thai}
+                -> 
+                ${updated.trang_thai}
+                `,
+    });
+
+    return updated;
+  },
+
+  // ================= DELETE =================
+
+  remove: async (id, user) => {
+    const old = await YeuCauModel.getById(id);
+
+    if (!old) {
+      throw new Error("Không tìm thấy yêu cầu");
+    }
+
+    const result = await YeuCauModel.remove(id);
+
+    await LichSuChinhSuaService.log({
+      user: user || {
+        id: 1,
+      },
+
+      action: "DELETE",
+
+      object: "YEU_CAU",
+
+      objectId: id,
+
+      oldData: old,
+
+      reason: "Xóa yêu cầu",
+    });
+
+    return result;
+  },
+};
 
 module.exports = YeuCauService;
