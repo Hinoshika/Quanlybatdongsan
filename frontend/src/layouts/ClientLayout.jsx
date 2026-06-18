@@ -19,8 +19,8 @@ import {
     BellOutlined
 } from "@ant-design/icons";
 
-import axios from "axios";
 import LoginModal from "../components/LoginModal";
+import { getYeuCau } from "../services/yeucau.service";
 
 const { Header, Content } = Layout;
 
@@ -40,26 +40,48 @@ export default function ClientLayout() {
     // ===== lấy số yêu cầu của user =====
     const fetchPending = async () => {
         try {
-            const res = await axios.get("http://localhost:5000/api/yeu-cau-user");
 
-            const count = res.data.filter(
-                item => item.trang_thai?.toUpperCase() === "CHO_XU_LY"
+            const data = await getYeuCau();
+
+
+            const list = Array.isArray(data)
+                ? data
+                : data.data || [];
+
+
+            const count = list.filter(
+                item =>
+                    item.trang_thai?.toUpperCase() === "CHO_XU_LY"
             ).length;
 
+
             setPendingCount(count);
+
+
         } catch (err) {
-            console.error(err);
+
+            console.error(
+                "Lỗi lấy yêu cầu:",
+                err
+            );
+
         }
     };
 
     useEffect(() => {
-        if (fullName) {
-            fetchPending();
 
-            const interval = setInterval(fetchPending, 10000);
-            return () => clearInterval(interval);
-        }
-    }, []);
+        if (!fullName) return;
+
+        fetchPending();
+
+        const interval = setInterval(
+            fetchPending,
+            10000
+        );
+
+        return () => clearInterval(interval);
+
+    }, [fullName]);
 
     // ===== menu dropdown user =====
     const items = [

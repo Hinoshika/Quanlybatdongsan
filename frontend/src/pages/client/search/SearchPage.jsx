@@ -151,11 +151,50 @@ export default function SearchPage() {
 
     // ====================== HANDLE CLICK ======================
     const handleClick = (record, isConstruction = false) => {
-        setSelected({ ...record, isConstruction });
+
+        console.log("CLICK DATA:", record);
+
+
+        setSelected({
+            ...record,
+            isConstruction
+        });
+
         setOpen(true);
 
-        if (record.lat && record.lng && mapRef.current) {
-            mapRef.current.setView([record.lat, record.lng], 17);
+
+        if (
+            record.lat &&
+            record.lng &&
+            mapRef.current
+        ) {
+
+            setTimeout(() => {
+
+                try {
+
+                    mapRef.current.setView(
+                        [
+                            Number(record.lat),
+                            Number(record.lng)
+                        ],
+                        17,
+                        {
+                            animate: true
+                        }
+                    );
+
+                } catch (err) {
+
+                    console.error(
+                        "MAP ERROR:",
+                        err
+                    );
+
+                }
+
+            }, 300);
+
         }
     };
 

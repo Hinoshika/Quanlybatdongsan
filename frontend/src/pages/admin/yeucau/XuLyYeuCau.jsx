@@ -14,7 +14,6 @@ import {
     Image,
     Typography
 } from "antd";
-
 import {
     getYeuCau,
     approveYeuCau,
@@ -28,7 +27,7 @@ export default function XuLyYeuCau() {
     const [loading, setLoading] = useState(false);
 
     const { TextArea } = Input;
-    const { Link } = Typography;
+    const { Text, Link } = Typography;
     const [form] = Form.useForm();
 
     const fetchData = async () => {
@@ -152,25 +151,25 @@ export default function XuLyYeuCau() {
                     : "",
         },
     ];
-
     return (
-        <Card title="Danh sách yêu cầu">
-            <Table
-                rowKey="id"
-                loading={loading}
-                columns={columns}
-                dataSource={data}
-                pagination={{
-                    pageSize: 10,
-                }}
-                onRow={(record) => ({
-                    onClick: () =>
-                        handleOpen(record),
-                    style: {
-                        cursor: "pointer",
-                    },
-                })}
-            />
+        <>
+            <Card title="Danh sách yêu cầu">
+                <Table
+                    rowKey="id"
+                    columns={columns}
+                    dataSource={data}
+                    loading={loading}
+                    pagination={{
+                        pageSize: 10
+                    }}
+                    onRow={(record) => ({
+                        onClick: () => handleOpen(record),
+                        style: {
+                            cursor: "pointer"
+                        }
+                    })}
+                />
+            </Card>
 
             <Modal
                 title="Chi tiết yêu cầu"
@@ -179,8 +178,8 @@ export default function XuLyYeuCau() {
                     setOpen(false);
                     setSelected(null);
                 }}
-                footer={null}
                 width={900}
+                footer={null}
             >
                 {selected && (
                     <>
@@ -197,10 +196,6 @@ export default function XuLyYeuCau() {
                                 {selected.loai_yeu_cau}
                             </Descriptions.Item>
 
-                            <Descriptions.Item label="Nội dung">
-                                {selected.noi_dung}
-                            </Descriptions.Item>
-
                             <Descriptions.Item label="Ngày gửi">
                                 {selected.ngay_gui
                                     ? new Date(
@@ -214,100 +209,126 @@ export default function XuLyYeuCau() {
                                     selected.trang_thai
                                 )}
                             </Descriptions.Item>
-
-                            <Descriptions.Item label="Tệp đính kèm">
-                                {selected.tep_dinh_kem &&
-                                    selected.tep_dinh_kem.length >
-                                    0 ? (
-                                    <Space
-                                        direction="vertical"
-                                        style={{
-                                            width: "100%",
-                                        }}
-                                    >
-                                        {selected.tep_dinh_kem.map(
-                                            (
-                                                file,
-                                                index
-                                            ) => {
-                                                const fileUrl =
-                                                    `http://localhost:5000/${file.duong_dan}`;
-
-                                                const isImage =
-                                                    file.loai_file?.startsWith(
-                                                        "image/"
-                                                    );
-
-                                                return (
-                                                    <div
-                                                        key={
-                                                            index
-                                                        }
-                                                    >
-                                                        {isImage && (
-                                                            <>
-                                                                <Image
-                                                                    width={
-                                                                        200
-                                                                    }
-                                                                    src={
-                                                                        fileUrl
-                                                                    }
-                                                                />
-
-                                                                <br />
-                                                            </>
-                                                        )}
-
-                                                        <Link
-                                                            href={
-                                                                fileUrl
-                                                            }
-                                                            target="_blank"
-                                                        >
-                                                            {
-                                                                file.ten_file
-                                                            }
-                                                        </Link>
-                                                    </div>
-                                                );
-                                            }
-                                        )}
-                                    </Space>
-                                ) : (
-                                    "Không có tệp đính kèm"
-                                )}
-                            </Descriptions.Item>
                         </Descriptions>
+
+                        <Card
+                            title="Nội dung yêu cầu"
+                            style={{
+                                marginTop: 16
+                            }}
+                        >
+                            {selected.noi_dung ||
+                                "Không có nội dung"}
+                        </Card>
+
+                        <Card
+                            title="Tệp đính kèm"
+                            style={{
+                                marginTop: 16
+                            }}
+                        >
+                            {selected.tep_dinh_kem?.length >
+                                0 ? (
+                                <Space
+                                    direction="vertical"
+                                    style={{
+                                        width: "100%"
+                                    }}
+                                >
+                                    {selected.tep_dinh_kem.map(
+                                        (
+                                            file,
+                                            index
+                                        ) => {
+                                            const fileUrl =
+                                                `http://localhost:5000/${file.duong_dan}`;
+
+                                            const isImage =
+                                                file.loai_file?.startsWith(
+                                                    "image/"
+                                                );
+
+                                            return (
+                                                <div
+                                                    key={
+                                                        index
+                                                    }
+                                                >
+                                                    {isImage && (
+                                                        <>
+                                                            <Image
+                                                                width={
+                                                                    250
+                                                                }
+                                                                src={
+                                                                    fileUrl
+                                                                }
+                                                            />
+                                                            <br />
+                                                        </>
+                                                    )}
+
+                                                    <Link
+                                                        href={
+                                                            fileUrl
+                                                        }
+                                                        target="_blank"
+                                                    >
+                                                        {
+                                                            file.ten_file
+                                                        }
+                                                    </Link>
+                                                </div>
+                                            );
+                                        }
+                                    )}
+                                </Space>
+                            ) : (
+                                <Text type="secondary">
+                                    Không có tệp đính kèm
+                                </Text>
+                            )}
+                        </Card>
 
                         <Form
                             form={form}
                             layout="vertical"
                             style={{
-                                marginTop: 20,
+                                marginTop: 16
                             }}
                         >
                             <Form.Item
-                                label="Ghi chú xử lý"
+                                label="Phản hồi xử lý"
                                 name="ghi_chu_xu_ly"
                             >
                                 <TextArea
-                                    rows={5}
-                                    disabled={
-                                        selected.trang_thai !==
-                                        "CHO_XU_LY"
-                                    }
+                                    rows={4}
                                 />
                             </Form.Item>
                         </Form>
 
                         {selected.trang_thai ===
                             "CHO_XU_LY" && (
-                                <Space>
+                                <Space
+                                    style={{
+                                        marginTop: 16
+                                    }}
+                                >
                                     <Popconfirm
-                                        title="Bạn có chắc muốn từ chối yêu cầu này?"
-                                        okText="Đồng ý"
-                                        cancelText="Hủy"
+                                        title="Duyệt yêu cầu?"
+                                        onConfirm={() =>
+                                            handleUpdate(
+                                                "DA_DUYET"
+                                            )
+                                        }
+                                    >
+                                        <Button type="primary">
+                                            Duyệt
+                                        </Button>
+                                    </Popconfirm>
+
+                                    <Popconfirm
+                                        title="Từ chối yêu cầu?"
                                         onConfirm={() =>
                                             handleUpdate(
                                                 "TU_CHOI"
@@ -318,38 +339,11 @@ export default function XuLyYeuCau() {
                                             Từ chối
                                         </Button>
                                     </Popconfirm>
-
-                                    <Popconfirm
-                                        title="Bạn có chắc muốn duyệt yêu cầu này?"
-                                        okText="Đồng ý"
-                                        cancelText="Hủy"
-                                        onConfirm={() =>
-                                            handleUpdate(
-                                                "DA_DUYET"
-                                            )
-                                        }
-                                    >
-                                        <Button type="primary">
-                                            Duyệt yêu cầu
-                                        </Button>
-                                    </Popconfirm>
                                 </Space>
                             )}
                     </>
                 )}
             </Modal>
-
-            <style>
-                {`
-                    .ant-table-tbody > tr {
-                        cursor: pointer;
-                    }
-
-                    .ant-table-tbody > tr:hover > td {
-                        background: #f5f5f5 !important;
-                    }
-                `}
-            </style>
-        </Card>
+        </>
     );
 }

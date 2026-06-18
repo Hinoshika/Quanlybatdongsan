@@ -120,11 +120,22 @@ export default function AdminLayout() {
                     path: "/admin/xu-ly-yeu-cau"
                 },
                 {
+                    icon: <FaMapMarkerAlt />,
+                    label: "Hệ thống bản đồ",
+                    path: "/admin/ban-do"
+                }
+            ]
+        },
+        {
+            title: "Quản trị",
+            items: [
+                {
                     icon: <FaHistory />,
                     label: "Lịch sử biến động",
                     path: "/admin/bien-dong"
                 }
-            ]
+            ],
+            roles: ["admin"]
         },
         {
             title: "Hệ thống",

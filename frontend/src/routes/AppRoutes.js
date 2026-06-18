@@ -19,6 +19,7 @@ import BienDong from "../pages/admin/biendong/BienDong";
 import XuLyYeuCau from "../pages/admin/yeucau/XuLyYeuCau";
 import SystemHistory from "../pages/admin/system-history/SystemHistory";
 import Settings from "../pages/admin/settings/Settings";
+import BanDo from "../pages/admin/bando/BanDo";
 
 export default function AppRoutes() {
 
@@ -53,6 +54,8 @@ export default function AppRoutes() {
                     <Route path="bien-dong" element={<BienDong />} />
 
                     <Route path="xu-ly-yeu-cau" element={<XuLyYeuCau />} />
+
+                    <Route path="ban-do" element={<BanDo />} />
 
                     <Route path="system-history" element={<SystemHistory />} />
 

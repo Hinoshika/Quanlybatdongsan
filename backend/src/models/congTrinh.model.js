@@ -255,22 +255,26 @@ const CongTrinhModel = {
 
         const result = await db.query(`
         SELECT
-            t.id,
-            t.so_thua,
-            t.so_to_ban_do,
-            t.dia_chi,
-            t.tinh,
-            t.dien_tich,
-            t.loai_dat,
-            t.muc_dich_su_dung,
-            t.hinh_thuc_su_dung,
-            t.thoi_han_su_dung,
-            t.nguon_goc_su_dung,
-            t.trang_thai,
+            ct.id,
+            ct.thua_dat_id,
+            ct.ten_cong_trinh,
+            ct.loai_cong_trinh,
+            ct.dia_chi,
+            ct.dien_tich_xay_dung,
+            ct.dien_tich_san,
+            ct.so_tang,
+            ct.ket_cau,
+            ct.cap_hang,
+            ct.nam_xay_dung,
+            ct.hinh_thuc_so_huu,
+            ct.thoi_han_so_huu,
+            ct.trang_thai,
 
-            ST_AsGeoJSON(t.geom) AS geom,
-            ST_Y(ST_Centroid(t.geom)) AS lat,
-            ST_X(ST_Centroid(t.geom)) AS lng,
+            ST_AsGeoJSON(ct.geom) AS geom,
+
+            ST_Y(ST_Centroid(ct.geom)) AS lat,
+            ST_X(ST_Centroid(ct.geom)) AS lng,
+
 
             COALESCE(
                 json_agg(
@@ -281,37 +285,45 @@ const CongTrinhModel = {
                         'dia_chi', cs.dia_chi,
                         'loai', cs.loai
                     )
-                ) FILTER (WHERE cs.id IS NOT NULL),
+                )
+                FILTER (WHERE cs.id IS NOT NULL),
                 '[]'
             ) AS chu_so_huu
 
-        FROM thua_dat t
 
-        LEFT JOIN so_huu_thua_dat sh
-            ON sh.thua_dat_id = t.id
+        FROM cong_trinh ct
+
+
+        LEFT JOIN so_huu_cong_trinh sh
+            ON sh.cong_trinh_id = ct.id
+
 
         LEFT JOIN chu_so_huu cs
             ON cs.id = sh.chu_so_huu_id
 
-        WHERE t.id IN (
 
-            SELECT t2.id
+        WHERE EXISTS (
 
-            FROM thua_dat t2
+            SELECT 1
 
-            JOIN so_huu_thua_dat sh2
-                ON sh2.thua_dat_id = t2.id
+            FROM so_huu_cong_trinh sh2
 
             JOIN chu_so_huu cs2
                 ON cs2.id = sh2.chu_so_huu_id
 
-            WHERE TRIM(cs2.so_cccd) = TRIM($1)
+            WHERE sh2.cong_trinh_id = ct.id
+
+            AND TRIM(cs2.so_cccd) = TRIM($1)
+
         )
 
-        GROUP BY t.id
 
-        ORDER BY t.id DESC
+        GROUP BY ct.id
+
+        ORDER BY ct.id DESC
+
     `, [so_cccd]);
+
 
         return result.rows;
     },
