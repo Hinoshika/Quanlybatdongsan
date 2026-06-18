@@ -5,15 +5,13 @@ const router = express.Router();
 
 const YeuCauController = require("../controllers/yeucau.controller");
 
+const { verifyToken } = require("../middleware/auth.middleware");
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // file văn bản phản hồi
     if (file.fieldname === "van_ban_phan_hoi") {
       cb(null, "uploads/van-ban");
-    }
-
-    // file người dân gửi
-    else {
+    } else {
       cb(null, "uploads/yeu-cau");
     }
   },
@@ -26,19 +24,49 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
 });
+console.log("verifyToken =", verifyToken);
+console.log("getAll =", YeuCauController.getAll);
+console.log("getMyYeuCau =", YeuCauController.getMyYeuCau);
 
-// lấy danh sách
-router.get("/", YeuCauController.getAll);
+// ================================
+// ADMIN LẤY TẤT CẢ
+// ================================
 
-// lấy chi tiết
-router.get("/:id", YeuCauController.getById);
+router.get("/", verifyToken, YeuCauController.getAll);
 
-// người dân tạo yêu cầu
-router.post("/", upload.array("files", 10), YeuCauController.create);
+// ================================
+// USER LẤY YÊU CẦU CỦA MÌNH
+// ================================
 
-// cán bộ xử lý
+router.get("/my", verifyToken, YeuCauController.getMyYeuCau);
+
+// ================================
+// CHI TIẾT
+// ================================
+
+router.get("/:id", verifyToken, YeuCauController.getById);
+
+// ================================
+// NGƯỜI DÂN TẠO
+// ================================
+
+router.post(
+  "/",
+  verifyToken,
+
+  upload.array("files", 10),
+
+  YeuCauController.create,
+);
+
+// ================================
+// CÁN BỘ CẬP NHẬT
+// ================================
+
 router.put(
   "/:id",
+
+  verifyToken,
 
   upload.fields([
     {
@@ -55,7 +83,16 @@ router.put(
   YeuCauController.update,
 );
 
-// xóa
-router.delete("/:id", YeuCauController.remove);
+// ================================
+// XÓA
+// ================================
+
+router.delete(
+  "/:id",
+
+  verifyToken,
+
+  YeuCauController.remove,
+);
 
 module.exports = router;

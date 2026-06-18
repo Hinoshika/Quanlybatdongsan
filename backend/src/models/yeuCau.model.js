@@ -124,6 +124,25 @@ const YeuCauModel = {
 
     return result.rows[0];
   },
+  getByUser: async (userId) => {
+    const sql = `
+        SELECT
+            yc.*,
+            u.full_name AS nguoi_gui
+        FROM yeu_cau yc
+
+        LEFT JOIN users u
+        ON yc.nguoi_gui_id = u.id
+
+        WHERE yc.nguoi_gui_id = $1
+
+        ORDER BY yc.id DESC
+    `;
+
+    const result = await db.query(sql, [userId]);
+
+    return result.rows;
+  },
 };
 
 module.exports = YeuCauModel;

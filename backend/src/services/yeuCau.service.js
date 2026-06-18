@@ -104,6 +104,9 @@ const YeuCauService = {
 
     return result;
   },
+  getByUser: async (userId) => {
+    return await YeuCauModel.getByUser(userId);
+  },
 };
 
 module.exports = YeuCauService;
