@@ -22,6 +22,7 @@ import {
   DatePicker,
 } from "antd";
 
+import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -83,12 +84,15 @@ export default function XuLyYeuCau() {
   }, []);
 
   const [filters, setFilters] = useState({
+    id: "",
     keyword: "",
     trang_thai: null,
     loai_yeu_cau: null,
   });
 
   const filteredData = data.filter((item) => {
+    const byId = filters.id ? Number(item.id) === Number(filters.id) : true;
+
     const keyword = filters.keyword
       ? item.nguoi_gui?.toLowerCase().includes(filters.keyword.toLowerCase()) ||
         item.loai_yeu_cau?.toLowerCase().includes(filters.keyword.toLowerCase())
@@ -102,15 +106,14 @@ export default function XuLyYeuCau() {
       ? item.loai_yeu_cau === filters.loai_yeu_cau
       : true;
 
-    return keyword && status && type;
+    return byId && keyword && status && type;
   });
 
   const resetFilter = () => {
     setFilters({
+      id: "",
       keyword: "",
-
       trang_thai: null,
-
       loai_yeu_cau: null,
     });
   };
@@ -262,7 +265,19 @@ export default function XuLyYeuCau() {
               marginBottom: 20,
             }}
           >
-            <Col span={8}>
+            <Col span={4}>
+              <Input
+                placeholder="Mã yêu cầu"
+                value={filters.id}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    id: e.target.value,
+                  })
+                }
+              />
+            </Col>
+            <Col span={6}>
               <Input
                 placeholder="🔎 Tìm người gửi, loại yêu cầu..."
                 value={filters.keyword}
@@ -341,7 +356,9 @@ export default function XuLyYeuCau() {
             </Col>
 
             <Col>
-              <Button onClick={resetFilter}>Reset</Button>
+              <Button icon={<ReloadOutlined />} onClick={resetFilter}>
+                Làm mới
+              </Button>
             </Col>
           </Row>
 

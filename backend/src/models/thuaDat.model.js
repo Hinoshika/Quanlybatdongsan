@@ -319,12 +319,18 @@ const ThuaDatModel = {
 
   // ================= FILTER SEARCH (NO CCCD) =================
   search: async (filters) => {
-    const { loai_dat, trang_thai, tinh, dien_tich_min, dien_tich_max } =
+    const { id, loai_dat, trang_thai, tinh, dien_tich_min, dien_tich_max } =
       filters;
 
     let where = `WHERE thua_dat.deleted_at IS NULL`;
     let values = [];
     let idx = 1;
+
+    // Tìm theo ID
+    if (id) {
+      where += ` AND thua_dat.id = $${idx++}`;
+      values.push(Number(id));
+    }
 
     if (loai_dat) {
       where += ` AND loai_dat = $${idx++}`;
@@ -351,23 +357,27 @@ const ThuaDatModel = {
       values.push(dien_tich_max);
     }
 
+    console.log("FILTERS:", filters);
+    console.log("WHERE:", where);
+    console.log("VALUES:", values);
+
     const result = await db.query(
       `
-            SELECT
-                id,
-                so_thua,
-                so_to_ban_do,
-                dia_chi,
-                tinh,
-                dien_tich,
-                loai_dat,
-                trang_thai,
-                ST_AsGeoJSON(geom) AS geom,
-                ST_Y(ST_Centroid(geom)) AS lat,
-                ST_X(ST_Centroid(geom)) AS lng
-            FROM thua_dat
-            ${where}
-            ORDER BY id DESC
+        SELECT
+            id,
+            so_thua,
+            so_to_ban_do,
+            dia_chi,
+            tinh,
+            dien_tich,
+            loai_dat,
+            trang_thai,
+            ST_AsGeoJSON(geom) AS geom,
+            ST_Y(ST_Centroid(geom)) AS lat,
+            ST_X(ST_Centroid(geom)) AS lng
+        FROM thua_dat
+        ${where}
+        ORDER BY id DESC
         `,
       values,
     );

@@ -9,9 +9,14 @@ import {
   Row,
   Col,
   Button,
+  Card,
 } from "antd";
 import dayjs from "dayjs";
-
+import {
+  SearchOutlined,
+  ReloadOutlined,
+  FilterOutlined,
+} from "@ant-design/icons";
 import {
   getBienDong,
   getBienDongById,
@@ -188,23 +193,26 @@ export default function BienDong() {
       dataIndex: "ngay_bien_dong",
       render: (v) => (v ? dayjs(v).format("DD/MM/YYYY") : "-"),
     },
+
     {
       title: "Loại",
       dataIndex: "loai_bien_dong",
       render: (v) => <Tag color={getColor(v)}>{getLoaiLabel(v)}</Tag>,
     },
+
     {
       title: "Thửa đất",
       render: (_, r) =>
-        r.so_thua
-          ? `Thửa ${r.so_thua} - Tờ ${r.so_to_ban_do} - Địa Chỉ ${r.dia_chi}`
+        r.thua_dat_id
+          ? `Thửa ${r.so_thua} - Tờ ${r.so_to_ban_do} - ${r.dia_chi}`
           : "-",
     },
+
     {
       title: "Công trình",
-      dataIndex: "ten_cong_trinh",
-      render: (v) => v || "-",
+      render: (_, r) => (r.cong_trinh_id ? `${r.ten_cong_trinh}` : "-"),
     },
+
     {
       title: "Người tạo",
       dataIndex: "nguoi_tao",
@@ -217,76 +225,138 @@ export default function BienDong() {
       <h2>📊 Danh sách biến động</h2>
 
       {/* FILTER */}
-      <Row gutter={12} style={{ marginBottom: 16 }}>
-        <Col>
-          <RangePicker
-            value={filters.date}
-            onChange={(val) => setFilters((prev) => ({ ...prev, date: val }))}
-          />
-        </Col>
-
-        <Col>
-          <Select
-            placeholder="Loại biến động"
-            allowClear
-            style={{ width: 220 }}
-            value={filters.type}
-            onChange={(val) => setFilters((prev) => ({ ...prev, type: val }))}
-          >
-            {/* Các loại biến động giao dịch */}
-            <Select.Option value="Chuyển nhượng">
-              🔄 Chuyển nhượng
-            </Select.Option>
-            <Select.Option value="Mua bán">💰 Mua bán</Select.Option>
-            <Select.Option value="Tặng cho">🎁 Tặng cho</Select.Option>
-            <Select.Option value="Thừa kế">📜 Thừa kế</Select.Option>
-            <Select.Option value="Cho thuê">🏢 Cho thuê</Select.Option>
-            <Select.Option value="Thuê mua">🔑 Thuê mua</Select.Option>
-            <Select.Option value="Thế chấp">🏦 Thế chấp</Select.Option>
-            <Select.Option value="Góp vốn">🤝 Góp vốn</Select.Option>
-
-            {/* Các loại biến động kỹ thuật / địa chính */}
-            <Select.Option value="tao_moi">✨ Tạo mới</Select.Option>
-            <Select.Option value="cap_nhat">📝 Cập nhật</Select.Option>
-            <Select.Option value="Tách thửa">✂️ Tách thửa</Select.Option>
-            <Select.Option value="Gộp thửa">🗺️ Gộp thửa</Select.Option>
-            <Select.Option value="chuyen_muc_dich">
-              🎯 Chuyển mục đích sử dụng
-            </Select.Option>
-            <Select.Option value="gia_han">⏳ Gia hạn sử dụng</Select.Option>
-            <Select.Option value="dinh_chinh">
-              🛠️ Đính chính sai sót
-            </Select.Option>
-            <Select.Option value="thu_hoi">❌ Thu hồi đất</Select.Option>
-          </Select>
-        </Col>
-
-        <Col>
-          <InputNumber
-            placeholder="Giá trị từ"
-            value={filters.minValue}
-            onChange={(v) => setFilters((p) => ({ ...p, minValue: v }))}
-          />
-        </Col>
-
-        <Col>
-          <InputNumber
-            placeholder="Giá trị đến"
-            value={filters.maxValue}
-            onChange={(v) => setFilters((p) => ({ ...p, maxValue: v }))}
-          />
-        </Col>
-
-        <Col>
-          <Button type="primary" onClick={handleFilter}>
-            Lọc
+      {/* ================= FILTER ================= */}
+      <Card
+        style={{
+          marginBottom: 16,
+          borderRadius: 12,
+        }}
+        title={
+          <span>
+            <FilterOutlined /> Bộ lọc biến động
+          </span>
+        }
+        extra={
+          <Button icon={<ReloadOutlined />} onClick={handleReset}>
+            Làm mới
           </Button>
-        </Col>
+        }
+      >
+        <Row gutter={[16, 8]} align="bottom">
+          {/* DATE */}
+          <Col xs={24} md={8} lg={6}>
+            <div style={{ marginBottom: 6, fontWeight: 500 }}>
+              Ngày biến động
+            </div>
 
-        <Col>
-          <Button onClick={handleReset}>Reset</Button>
-        </Col>
-      </Row>
+            <RangePicker
+              style={{ width: "100%" }}
+              value={filters.date}
+              onChange={(val) =>
+                setFilters((p) => ({
+                  ...p,
+                  date: val,
+                }))
+              }
+            />
+          </Col>
+
+          {/* TYPE */}
+          <Col xs={24} md={8} lg={6}>
+            <div style={{ marginBottom: 6, fontWeight: 500 }}>
+              Loại biến động
+            </div>
+
+            <Select
+              allowClear
+              placeholder="Chọn loại biến động"
+              style={{ width: "100%" }}
+              value={filters.type}
+              onChange={(val) =>
+                setFilters((p) => ({
+                  ...p,
+                  type: val,
+                }))
+              }
+            >
+              <Select.Option value="Chuyển nhượng">
+                🔄 Chuyển nhượng
+              </Select.Option>
+
+              <Select.Option value="Mua bán">💰 Mua bán</Select.Option>
+
+              <Select.Option value="Tặng cho">🎁 Tặng cho</Select.Option>
+
+              <Select.Option value="Thừa kế">📜 Thừa kế</Select.Option>
+
+              <Select.Option value="Cho thuê">🏢 Cho thuê</Select.Option>
+
+              <Select.Option value="Thuê mua">🔑 Thuê mua</Select.Option>
+
+              <Select.Option value="Thế chấp">🏦 Thế chấp</Select.Option>
+
+              <Select.Option value="Tạo mới">✨ Tạo mới</Select.Option>
+
+              <Select.Option value="Cập nhật">📝 Cập nhật</Select.Option>
+
+              <Select.Option value="Tách thửa">✂️ Tách thửa</Select.Option>
+
+              <Select.Option value="Gộp thửa">🗺 Gộp thửa</Select.Option>
+
+              <Select.Option value="Thu hồi">❌ Thu hồi</Select.Option>
+            </Select>
+          </Col>
+
+          {/* MIN */}
+          <Col xs={12} md={4} lg={3}>
+            <div style={{ marginBottom: 6, fontWeight: 500 }}>Giá trị từ</div>
+
+            <InputNumber
+              style={{ width: "100%" }}
+              placeholder="VNĐ"
+              min={0}
+              value={filters.minValue}
+              onChange={(v) =>
+                setFilters((p) => ({
+                  ...p,
+                  minValue: v,
+                }))
+              }
+            />
+          </Col>
+
+          {/* MAX */}
+          <Col xs={12} md={4} lg={3}>
+            <div style={{ marginBottom: 6, fontWeight: 500 }}>Giá trị đến</div>
+
+            <InputNumber
+              style={{ width: "100%" }}
+              placeholder="VNĐ"
+              min={0}
+              value={filters.maxValue}
+              onChange={(v) =>
+                setFilters((p) => ({
+                  ...p,
+                  maxValue: v,
+                }))
+              }
+            />
+          </Col>
+
+          {/* SEARCH */}
+          <Col xs={24} lg={6}>
+            <Button
+              type="primary"
+              icon={<SearchOutlined />}
+              size="middle"
+              onClick={handleFilter}
+              block
+            >
+              Tìm kiếm
+            </Button>
+          </Col>
+        </Row>
+      </Card>
 
       {/* TABLE */}
       <Table
@@ -370,7 +440,14 @@ export default function BienDong() {
             {/* THỬA ĐẤT */}
             <div style={sectionCard}>
               <div style={sectionTitle}>🏡 Thửa đất</div>
+
               <div style={sectionValue}>
+                {detail.thua_dat_id && (
+                  <div>
+                    <b>Mã Định Danh:</b> #{detail.thua_dat_id}
+                  </div>
+                )}
+
                 {detail.so_thua
                   ? `Thửa ${detail.so_thua} • Tờ ${detail.so_to_ban_do} • Địa Chỉ ${detail.dia_chi}`
                   : "Không có thông tin"}
@@ -380,8 +457,15 @@ export default function BienDong() {
             {/* CÔNG TRÌNH */}
             <div style={sectionCard}>
               <div style={sectionTitle}>🏗 Công trình</div>
+
               <div style={sectionValue}>
-                {detail.ten_cong_trinh || "Không có"}
+                {detail.cong_trinh_id && (
+                  <div>
+                    <b>Mã Định Danh:</b> #{detail.cong_trinh_id}
+                  </div>
+                )}
+
+                <div>{detail.ten_cong_trinh || "Không có"}</div>
               </div>
             </div>
 

@@ -1,18 +1,18 @@
-// src/pages/client/map/BanDo.jsx
-
 import { useEffect, useState } from "react";
 
 import {
   Card,
-  Modal,
+  Drawer,
   Descriptions,
   Tag,
   Spin,
   Alert,
-  Divider,
   List,
   Avatar,
   Empty,
+  Tabs,
+  Row,
+  Col,
 } from "antd";
 
 import { MapContainer, TileLayer, GeoJSON, LayersControl } from "react-leaflet";
@@ -87,8 +87,8 @@ export default function BanDo() {
     let color = "#1677ff";
 
     if (status === "dang_su_dung") color = "#52c41a";
-    else if (status === "tranh_chap") color = "#ff4d4f";
-    else if (status === "thu_hoi") color = "#8c8c8c";
+    else if (status === "Tranh chấp") color = "#ff4d4f";
+    else if (status === "Thu hồi") color = "#8c8c8c";
 
     return {
       color,
@@ -152,39 +152,47 @@ export default function BanDo() {
     );
   };
 
-  const renderLienKe = (key, label) => {
+  const renderLienKeCard = (key, title) => {
     const item = lienKe?.[key];
 
     return (
-      <Descriptions
-        bordered
-        column={2}
+      <Card
+        size="small"
+        title={title}
         style={{
-          marginBottom: 15,
+          borderRadius: 12,
+          height: "100%",
         }}
       >
-        <Descriptions.Item label="Hướng">{label}</Descriptions.Item>
+        {item ? (
+          <>
+            <p>
+              <b>Số thửa:</b> {item.so_thua}
+            </p>
 
-        <Descriptions.Item label="Số thửa">
-          {item?.so_thua || "Không có"}
-        </Descriptions.Item>
+            <p>
+              <b>Tờ bản đồ:</b> {item.so_to_ban_do}
+            </p>
 
-        <Descriptions.Item label="Tờ bản đồ">
-          {item?.so_to_ban_do || "-"}
-        </Descriptions.Item>
+            <p>
+              <b>Diện tích:</b> {item.dien_tich} m²
+            </p>
 
-        <Descriptions.Item label="Diện tích">
-          {item?.dien_tich ? `${item.dien_tich} m²` : "-"}
-        </Descriptions.Item>
+            <p>
+              <b>Loại đất:</b> {item.loai_dat}
+            </p>
 
-        <Descriptions.Item label="Loại đất">
-          {item?.loai_dat || "-"}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="Địa chỉ" span={2}>
-          {item?.dia_chi || "-"}
-        </Descriptions.Item>
-      </Descriptions>
+            <p>
+              <b>Địa chỉ:</b> {item.dia_chi}
+            </p>
+          </>
+        ) : (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="Không có dữ liệu"
+          />
+        )}
+      </Card>
     );
   };
 
@@ -284,66 +292,108 @@ export default function BanDo() {
         </Spin>
       </Card>
 
-      <Modal
-        title={`📍 Thửa đất ${selected?.so_thua || ""}`}
+      <Drawer
+        title={<>📍 Thửa đất {selected?.id}</>}
         open={!!selected}
-        width={1000}
-        centered
-        footer={null}
-        onCancel={() => {
+        width={520}
+        placement="right"
+        destroyOnClose
+        onClose={() => {
           setSelected(null);
-
           setLienKe(null);
         }}
       >
         {selected && (
-          <>
-            <Descriptions bordered column={2}>
-              <Descriptions.Item label="Số thửa">
-                {selected.so_thua}
-              </Descriptions.Item>
+          <Tabs
+            defaultActiveKey="1"
+            items={[
+              {
+                key: "1",
+                label: "📄 Thông tin",
+                children: (
+                  <Card bordered={false}>
+                    <Descriptions bordered column={1} size="small">
+                      <Descriptions.Item label="Mã định danh">
+                        <Tag color="blue">#{selected.id}</Tag>
+                      </Descriptions.Item>
 
-              <Descriptions.Item label="Tờ bản đồ">
-                {selected.so_to_ban_do}
-              </Descriptions.Item>
+                      <Descriptions.Item label="Số thửa">
+                        {selected.so_thua}
+                      </Descriptions.Item>
 
-              <Descriptions.Item label="Địa chỉ" span={2}>
-                {selected.dia_chi}
-              </Descriptions.Item>
+                      <Descriptions.Item label="Tờ bản đồ">
+                        {selected.so_to_ban_do}
+                      </Descriptions.Item>
 
-              <Descriptions.Item label="Diện tích">
-                {selected.dien_tich} m²
-              </Descriptions.Item>
+                      <Descriptions.Item label="Địa chỉ">
+                        {selected.dia_chi}
+                      </Descriptions.Item>
 
-              <Descriptions.Item label="Loại đất">
-                {selected.loai_dat}
-              </Descriptions.Item>
+                      <Descriptions.Item label="Diện tích">
+                        {selected.dien_tich} m²
+                      </Descriptions.Item>
 
-              <Descriptions.Item label="Mục đích">
-                {selected.muc_dich_su_dung}
-              </Descriptions.Item>
+                      <Descriptions.Item label="Loại đất">
+                        {selected.loai_dat}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  </Card>
+                ),
+              },
 
-              <Descriptions.Item label="Trạng thái">
-                {renderTrangThai(selected.trang_thai)}
-              </Descriptions.Item>
+              {
+                key: "2",
+                label: "👥 Chủ sở hữu",
+                children: (
+                  <List
+                    dataSource={selected?.chu_so_huu || []}
+                    locale={{
+                      emptyText: "Chưa có chủ sở hữu",
+                    }}
+                    renderItem={(owner) => (
+                      <List.Item>
+                        <List.Item.Meta
+                          avatar={<Avatar>👤</Avatar>}
+                          title={owner.ho_ten}
+                          description={
+                            <>
+                              <div>CCCD: {owner.so_cccd || "-"}</div>
 
-              <Descriptions.Item label="Chủ sở hữu" span={2}>
-                {renderChuSoHuu()}
-              </Descriptions.Item>
-            </Descriptions>
+                              <div>
+                                Điện thoại: {owner.so_dien_thoai || "-"}
+                              </div>
 
-            <Divider>🧭 Thửa đất liền kề</Divider>
+                              <div>Địa chỉ: {owner.dia_chi || "-"}</div>
 
-            {renderLienKe("bac", "⬆ Bắc")}
+                              <Tag color="blue">{owner.ty_le_so_huu}%</Tag>
+                            </>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                  />
+                ),
+              },
 
-            {renderLienKe("dong", "➡ Đông")}
+              {
+                key: "3",
+                label: "🧭 Liền kề",
+                children: (
+                  <Row gutter={[12, 12]}>
+                    <Col span={12}>{renderLienKeCard("bac", "⬆ Bắc")}</Col>
 
-            {renderLienKe("tay", "⬅ Tây")}
+                    <Col span={12}>{renderLienKeCard("dong", "➡ Đông")}</Col>
 
-            {renderLienKe("nam", "⬇ Nam")}
-          </>
+                    <Col span={12}>{renderLienKeCard("tay", "⬅ Tây")}</Col>
+
+                    <Col span={12}>{renderLienKeCard("nam", "⬇ Nam")}</Col>
+                  </Row>
+                ),
+              },
+            ]}
+          />
         )}
-      </Modal>
+      </Drawer>
     </>
   );
 }

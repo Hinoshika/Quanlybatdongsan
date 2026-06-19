@@ -290,8 +290,27 @@ export default function User() {
               <Input placeholder="Nguyễn Văn A" />
             </Form.Item>
 
-            <Form.Item name="phone" label="Số điện thoại">
-              <Input placeholder="098xxxxxxx" />
+            <Form.Item
+              name="phone"
+              label="Số điện thoại"
+              rules={[
+                {
+                  required: true,
+                  message: "Vui lòng nhập số điện thoại",
+                },
+                {
+                  pattern: /^[0-9]{10}$/,
+                  message: "Số điện thoại 10 số",
+                },
+              ]}
+            >
+              <Input
+                style={{
+                  width: "100%",
+                }}
+                maxLength={15}
+                placeholder="Nhập số điện thoại"
+              />
             </Form.Item>
 
             <Form.Item

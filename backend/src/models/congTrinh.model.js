@@ -1,10 +1,11 @@
 const db = require("../config/db");
 
 const CongTrinhModel = {
-
-    // ================= GET ALL =================
-    getAll: async () => {
-        return db.query(`
+  // ================= GET ALL =================
+  getAll: async () => {
+    return db
+      .query(
+        `
             SELECT
                 id,
                 thua_dat_id,
@@ -26,12 +27,15 @@ const CongTrinhModel = {
             FROM cong_trinh
             WHERE deleted_at IS NULL
             ORDER BY id DESC
-        `).then(res => res.rows);
-    },
+        `,
+      )
+      .then((res) => res.rows);
+  },
 
-    // ================= GET BY ID =================
-    getById: async (id) => {
-        const result = await db.query(`
+  // ================= GET BY ID =================
+  getById: async (id) => {
+    const result = await db.query(
+      `
             SELECT
                 ct.*,
                 ST_AsGeoJSON(ct.geom) AS geom,
@@ -58,19 +62,22 @@ const CongTrinhModel = {
               AND ct.deleted_at IS NULL
 
             GROUP BY ct.id
-        `, [id]);
+        `,
+      [id],
+    );
 
-        const row = result.rows[0];
+    const row = result.rows[0];
 
-        return {
-            ...row,
-            geom: row?.geom ? JSON.parse(row.geom) : null
-        };
-    },
+    return {
+      ...row,
+      geom: row?.geom ? JSON.parse(row.geom) : null,
+    };
+  },
 
-    // ================= CREATE =================
-    create: async (data) => {
-        const result = await db.query(`
+  // ================= CREATE =================
+  create: async (data) => {
+    const result = await db.query(
+      `
             INSERT INTO cong_trinh (
                 thua_dat_id,
                 ten_cong_trinh,
@@ -93,29 +100,32 @@ const CongTrinhModel = {
                 ST_GeomFromGeoJSON($14)
             )
             RETURNING *
-        `, [
-            data.thua_dat_id,
-            data.ten_cong_trinh,
-            data.loai_cong_trinh,
-            data.dia_chi,
-            data.dien_tich_xay_dung,
-            data.dien_tich_san,
-            data.so_tang,
-            data.ket_cau,
-            data.cap_hang,
-            data.nam_xay_dung,
-            data.hinh_thuc_so_huu,
-            data.thoi_han_so_huu,
-            data.trang_thai || "dang_su_dung",
-            data.geom
-        ]);
+        `,
+      [
+        data.thua_dat_id,
+        data.ten_cong_trinh,
+        data.loai_cong_trinh,
+        data.dia_chi,
+        data.dien_tich_xay_dung,
+        data.dien_tich_san,
+        data.so_tang,
+        data.ket_cau,
+        data.cap_hang,
+        data.nam_xay_dung,
+        data.hinh_thuc_so_huu,
+        data.thoi_han_so_huu,
+        data.trang_thai || "dang_su_dung",
+        data.geom,
+      ],
+    );
 
-        return result.rows[0];
-    },
+    return result.rows[0];
+  },
 
-    // ================= UPDATE =================
-    update: async (id, data) => {
-        const result = await db.query(`
+  // ================= UPDATE =================
+  update: async (id, data) => {
+    const result = await db.query(
+      `
             UPDATE cong_trinh
             SET
                 thua_dat_id = $1,
@@ -136,95 +146,104 @@ const CongTrinhModel = {
             WHERE id = $15
               AND deleted_at IS NULL
             RETURNING *
-        `, [
-            data.thua_dat_id,
-            data.ten_cong_trinh,
-            data.loai_cong_trinh,
-            data.dia_chi,
-            data.dien_tich_xay_dung,
-            data.dien_tich_san,
-            data.so_tang,
-            data.ket_cau,
-            data.cap_hang,
-            data.nam_xay_dung,
-            data.hinh_thuc_so_huu,
-            data.thoi_han_so_huu,
-            data.trang_thai,
-            data.geom,
-            id
-        ]);
+        `,
+      [
+        data.thua_dat_id,
+        data.ten_cong_trinh,
+        data.loai_cong_trinh,
+        data.dia_chi,
+        data.dien_tich_xay_dung,
+        data.dien_tich_san,
+        data.so_tang,
+        data.ket_cau,
+        data.cap_hang,
+        data.nam_xay_dung,
+        data.hinh_thuc_so_huu,
+        data.thoi_han_so_huu,
+        data.trang_thai,
+        data.geom,
+        id,
+      ],
+    );
 
-        return result.rows[0];
-    },
+    return result.rows[0];
+  },
 
-    // ================= DELETE (SOFT DELETE) =================
-    delete: async (id) => {
-        const result = await db.query(`
+  // ================= DELETE (SOFT DELETE) =================
+  delete: async (id) => {
+    const result = await db.query(
+      `
             UPDATE cong_trinh
             SET deleted_at = NOW()
             WHERE id = $1
               AND deleted_at IS NULL
             RETURNING *
-        `, [id]);
+        `,
+      [id],
+    );
 
-        return result.rows[0];
-    },
+    return result.rows[0];
+  },
 
-    // ================= SEARCH (GIỐNG THUADATMODEL STYLE) =================
-    search: async (filters) => {
+  // ================= SEARCH (GIỐNG THUADATMODEL STYLE) =================
+  search: async (filters) => {
+    const {
+      id,
+      keyword,
+      loai_cong_trinh,
+      trang_thai,
+      so_cccd,
+      ho_ten,
+      dien_tich_min,
+      dien_tich_max,
+    } = filters;
 
-        const {
-            keyword,
-            loai_cong_trinh,
-            trang_thai,
-            so_cccd,
-            ho_ten,
-            dien_tich_min,
-            dien_tich_max
-        } = filters;
+    let where = `WHERE ct.deleted_at IS NULL`;
+    let values = [];
+    let idx = 1;
+    if (id) {
+      where += ` AND ct.id = $${idx++}`;
+      values.push(Number(id));
+    }
 
-        let where = `WHERE ct.deleted_at IS NULL`;
-        let values = [];
-        let idx = 1;
-
-        // ================= KEYWORD =================
-        if (keyword) {
-            where += `
+    // ================= KEYWORD =================
+    if (keyword) {
+      where += `
                 AND (
                     ct.ten_cong_trinh ILIKE $${idx}
                     OR ct.dia_chi ILIKE $${idx}
                 )
             `;
-            values.push(`%${keyword}%`);
-            idx++;
-        }
+      values.push(`%${keyword}%`);
+      idx++;
+    }
 
-        // ================= LOẠI =================
-        if (loai_cong_trinh) {
-            where += ` AND ct.loai_cong_trinh = $${idx++}`;
-            values.push(loai_cong_trinh);
-        }
+    // ================= LOẠI =================
+    if (loai_cong_trinh) {
+      where += ` AND ct.loai_cong_trinh = $${idx++}`;
+      values.push(loai_cong_trinh);
+    }
 
-        // ================= TRẠNG THÁI =================
-        if (trang_thai) {
-            where += ` AND ct.trang_thai = $${idx++}`;
-            values.push(trang_thai);
-        }
+    // ================= TRẠNG THÁI =================
+    if (trang_thai) {
+      where += ` AND ct.trang_thai = $${idx++}`;
+      values.push(trang_thai);
+    }
 
-        // ================= DIỆN TÍCH =================
-        if (dien_tich_min) {
-            where += ` AND ct.dien_tich_san >= $${idx++}`;
-            values.push(dien_tich_min);
-        }
+    // ================= DIỆN TÍCH =================
+    if (dien_tich_min) {
+      where += ` AND ct.dien_tich_san >= $${idx++}`;
+      values.push(dien_tich_min);
+    }
 
-        if (dien_tich_max) {
-            where += ` AND ct.dien_tich_san <= $${idx++}`;
-            values.push(dien_tich_max);
-        }
+    if (dien_tich_max) {
+      where += ` AND ct.dien_tich_san <= $${idx++}`;
+      values.push(dien_tich_max);
+    }
 
-        // ================= OWNER SEARCH (EXISTS) =================
-        if (so_cccd || ho_ten) {
-            where += ` AND EXISTS (
+    // ================= OWNER SEARCH (EXISTS) =================
+    if (so_cccd || ho_ten) {
+      where += ` AND EXISTS (
                 SELECT 1
                 FROM so_huu_cong_trinh sh
                 JOIN chu_so_huu cs ON cs.id = sh.chu_so_huu_id
@@ -233,11 +252,12 @@ const CongTrinhModel = {
                 ${ho_ten ? `AND cs.ho_ten ILIKE $${idx++}` : ""}
             )`;
 
-            if (so_cccd) values.push(`%${so_cccd}%`);
-            if (ho_ten) values.push(`%${ho_ten}%`);
-        }
+      if (so_cccd) values.push(`%${so_cccd}%`);
+      if (ho_ten) values.push(`%${ho_ten}%`);
+    }
 
-        const result = await db.query(`
+    const result = await db.query(
+      `
             SELECT
                 ct.*,
                 ST_AsGeoJSON(ct.geom) AS geom,
@@ -246,14 +266,16 @@ const CongTrinhModel = {
             FROM cong_trinh ct
             ${where}
             ORDER BY ct.id DESC
-        `, values);
+        `,
+      values,
+    );
 
-        return result.rows;
-    },
-    // ================= SEARCH BY CCCD =================
-    searchByCCCD: async (so_cccd) => {
-
-        const result = await db.query(`
+    return result.rows;
+  },
+  // ================= SEARCH BY CCCD =================
+  searchByCCCD: async (so_cccd) => {
+    const result = await db.query(
+      `
         SELECT
             ct.id,
             ct.thua_dat_id,
@@ -322,15 +344,16 @@ const CongTrinhModel = {
 
         ORDER BY ct.id DESC
 
-    `, [so_cccd]);
+    `,
+      [so_cccd],
+    );
 
+    return result.rows;
+  },
 
-        return result.rows;
-    },
-
-    searchByMap: async (lat, lng, radius = 500) => {
-
-        const result = await db.query(`
+  searchByMap: async (lat, lng, radius = 500) => {
+    const result = await db.query(
+      `
         SELECT
             t.id,
             t.ten_cong_trinh,
@@ -381,10 +404,12 @@ const CongTrinhModel = {
         GROUP BY t.id
 
         ORDER BY t.id DESC
-    `, [lat, lng, radius]);
+    `,
+      [lat, lng, radius],
+    );
 
-        return result.rows;
-    }
+    return result.rows;
+  },
 };
 
 module.exports = CongTrinhModel;

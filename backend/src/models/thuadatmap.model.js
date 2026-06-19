@@ -159,7 +159,6 @@ const ThuaDatMapModel = {
                         'id',
                         csh.id,
 
-
                         'ho_ten',
                         csh.ho_ten,
 
