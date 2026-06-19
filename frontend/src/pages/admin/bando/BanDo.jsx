@@ -1,384 +1,314 @@
-import { useState, useMemo } from "react";
-import {
-    Row,
-    Col,
-    Card,
-    Statistic,
-    Input,
-    List,
-    Drawer,
-    Descriptions,
-    Tag,
-    Button
-} from "antd";
+import { useEffect, useState } from "react";
 
-import {
-    MapContainer,
-    TileLayer,
-    Polygon,
-    Popup
-} from "react-leaflet";
+import { Card, Modal, Descriptions, Tag, Spin, Alert, Divider } from "antd";
+
+import { MapContainer, TileLayer, GeoJSON, LayersControl } from "react-leaflet";
 
 import "leaflet/dist/leaflet.css";
 
-const mockData = [
-    {
-        id: 1,
-        ma_thua: "TD001",
-        loai_dat: "Đất ở đô thị",
-        dien_tich: 350,
-        trang_thai: "Đang sử dụng",
-        chu_so_huu: "Nguyễn Văn A",
-        polygon: [
-            [21.0286, 105.8541],
-            [21.0288, 105.8541],
-            [21.0288, 105.8545],
-            [21.0286, 105.8545]
-        ]
-    },
-    {
-        id: 2,
-        ma_thua: "TD002",
-        loai_dat: "Đất nông nghiệp",
-        dien_tich: 1200,
-        trang_thai: "Chờ xử lý",
-        chu_so_huu: "Trần Văn B",
-        polygon: [
-            [21.0291, 105.855],
-            [21.0293, 105.855],
-            [21.0293, 105.8554],
-            [21.0291, 105.8554]
-        ]
+import {
+  getAllThuaDatMap,
+  getThuaDatMapByThuaDat,
+} from "../../../services/thuaDatMap.service";
+
+export default function BanDo() {
+  const [data, setData] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+
+  const [selected, setSelected] = useState(null);
+
+  const [lienKe, setLienKe] = useState(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // ================= LOAD MAP =================
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      const result = await getAllThuaDatMap();
+
+      console.log("THUA DAT MAP:", result);
+
+      setData(result || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-];
+  };
 
-export default function BanDoPage() {
-    const [keyword, setKeyword] = useState("");
+  // ================= LOAD LIEN KE =================
 
-    const [selectedThua, setSelectedThua] =
-        useState(null);
+  const loadLienKe = async (id) => {
+    try {
+      const result = await getThuaDatMapByThuaDat(id);
 
-    const filteredData = useMemo(() => {
-        return mockData.filter(
-            item =>
-                item.ma_thua
-                    .toLowerCase()
-                    .includes(
-                        keyword.toLowerCase()
-                    ) ||
-                item.chu_so_huu
-                    .toLowerCase()
-                    .includes(
-                        keyword.toLowerCase()
-                    )
-        );
-    }, [keyword]);
+      console.log("LIEN KE:", result);
 
-    const getColor = status => {
-        switch (status) {
-            case "Đang sử dụng":
-                return "#52c41a";
+      setLienKe(result);
+    } catch (error) {
+      console.error(error);
 
-            case "Chờ xử lý":
-                return "#faad14";
+      setLienKe(null);
+    }
+  };
 
-            case "Tranh chấp":
-                return "#ff4d4f";
+  const handleClickThuaDat = async (item) => {
+    setSelected(item);
 
-            case "Thu hồi":
-                return "#8c8c8c";
+    await loadLienKe(item.id);
+  };
 
-            default:
-                return "#1677ff";
-        }
+  // ================= STYLE =================
+
+  const getStyle = (feature) => {
+    const status = feature.properties?.trang_thai;
+
+    let color = "#1677ff";
+
+    switch (status) {
+      case "dang_su_dung":
+        color = "#52c41a";
+
+        break;
+
+      case "tranh_chap":
+        color = "#ff4d4f";
+
+        break;
+
+      case "thu_hoi":
+        color = "#8c8c8c";
+
+        break;
+
+      default:
+        color = "#faad14";
+    }
+
+    return {
+      color,
+
+      fillColor: color,
+
+      fillOpacity: 0.5,
+
+      weight: 2,
     };
+  };
+
+  const renderTrangThai = (status) => {
+    if (!status) return "";
 
     return (
-        <div>
-            {/* KPI */}
-            <Row gutter={16}>
-                <Col span={6}>
-                    <Card>
-                        <Statistic
-                            title="Tổng thửa đất"
-                            value={
-                                mockData.length
-                            }
-                        />
-                    </Card>
-                </Col>
-
-                <Col span={6}>
-                    <Card>
-                        <Statistic
-                            title="Đang sử dụng"
-                            value={
-                                mockData.filter(
-                                    x =>
-                                        x.trang_thai ===
-                                        "Đang sử dụng"
-                                ).length
-                            }
-                        />
-                    </Card>
-                </Col>
-
-                <Col span={6}>
-                    <Card>
-                        <Statistic
-                            title="Chờ xử lý"
-                            value={
-                                mockData.filter(
-                                    x =>
-                                        x.trang_thai ===
-                                        "Chờ xử lý"
-                                ).length
-                            }
-                        />
-                    </Card>
-                </Col>
-
-                <Col span={6}>
-                    <Card>
-                        <Statistic
-                            title="Tranh chấp"
-                            value={
-                                mockData.filter(
-                                    x =>
-                                        x.trang_thai ===
-                                        "Tranh chấp"
-                                ).length
-                            }
-                        />
-                    </Card>
-                </Col>
-            </Row>
-
-            {/* Search */}
-            <Card
-                style={{
-                    marginTop: 16,
-                    marginBottom: 16
-                }}
-            >
-                <Input.Search
-                    placeholder="Tìm mã thửa hoặc chủ sở hữu..."
-                    allowClear
-                    onChange={e =>
-                        setKeyword(
-                            e.target.value
-                        )
-                    }
-                />
-            </Card>
-
-            {/* Main */}
-            <Row gutter={16}>
-                {/* Sidebar */}
-                <Col span={6}>
-                    <Card
-                        title="Danh sách thửa đất"
-                        style={{
-                            height: "75vh",
-                            overflow: "auto"
-                        }}
-                    >
-                        <List
-                            dataSource={
-                                filteredData
-                            }
-                            renderItem={item => (
-                                <List.Item
-                                    onClick={() =>
-                                        setSelectedThua(
-                                            item
-                                        )
-                                    }
-                                    style={{
-                                        cursor:
-                                            "pointer"
-                                    }}
-                                >
-                                    <List.Item.Meta
-                                        title={
-                                            item.ma_thua
-                                        }
-                                        description={
-                                            <>
-                                                <div>
-                                                    {
-                                                        item.loai_dat
-                                                    }
-                                                </div>
-
-                                                <div>
-                                                    {
-                                                        item.dien_tich
-                                                    }
-                                                    m²
-                                                </div>
-                                            </>
-                                        }
-                                    />
-                                </List.Item>
-                            )}
-                        />
-                    </Card>
-                </Col>
-
-                {/* MAP */}
-                <Col span={18}>
-                    <Card
-                        title="Bản đồ thửa đất"
-                        bodyStyle={{
-                            padding: 0
-                        }}
-                    >
-                        <MapContainer
-                            center={[
-                                21.0285,
-                                105.8542
-                            ]}
-                            zoom={17}
-                            style={{
-                                height:
-                                    "75vh",
-                                width:
-                                    "100%"
-                            }}
-                        >
-                            <TileLayer
-                                attribution="OSM"
-                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            />
-
-                            {filteredData.map(
-                                item => (
-                                    <Polygon
-                                        key={
-                                            item.id
-                                        }
-                                        positions={
-                                            item.polygon
-                                        }
-                                        eventHandlers={{
-                                            click: () =>
-                                                setSelectedThua(
-                                                    item
-                                                )
-                                        }}
-                                        pathOptions={{
-                                            color:
-                                                selectedThua?.id ===
-                                                    item.id
-                                                    ? "#ff4d4f"
-                                                    : getColor(
-                                                        item.trang_thai
-                                                    ),
-                                            weight:
-                                                selectedThua?.id ===
-                                                    item.id
-                                                    ? 5
-                                                    : 2
-                                        }}
-                                    >
-                                        <Popup>
-                                            <b>
-                                                {
-                                                    item.ma_thua
-                                                }
-                                            </b>
-
-                                            <br />
-
-                                            {
-                                                item.loai_dat
-                                            }
-
-                                            <br />
-
-                                            {
-                                                item.dien_tich
-                                            }
-                                            m²
-
-                                            <br />
-
-                                            {
-                                                item.chu_so_huu
-                                            }
-                                        </Popup>
-                                    </Polygon>
-                                )
-                            )}
-                        </MapContainer>
-                    </Card>
-                </Col>
-            </Row>
-
-            {/* Drawer */}
-            <Drawer
-                width={500}
-                title="Chi tiết thửa đất"
-                open={!!selectedThua}
-                onClose={() =>
-                    setSelectedThua(null)
-                }
-            >
-                {selectedThua && (
-                    <>
-                        <Descriptions
-                            bordered
-                            column={1}
-                        >
-                            <Descriptions.Item label="Mã thửa">
-                                {
-                                    selectedThua.ma_thua
-                                }
-                            </Descriptions.Item>
-
-                            <Descriptions.Item label="Loại đất">
-                                {
-                                    selectedThua.loai_dat
-                                }
-                            </Descriptions.Item>
-
-                            <Descriptions.Item label="Diện tích">
-                                {
-                                    selectedThua.dien_tich
-                                }
-                                m²
-                            </Descriptions.Item>
-
-                            <Descriptions.Item label="Chủ sở hữu">
-                                {
-                                    selectedThua.chu_so_huu
-                                }
-                            </Descriptions.Item>
-
-                            <Descriptions.Item label="Trạng thái">
-                                <Tag
-                                    color="green"
-                                >
-                                    {
-                                        selectedThua.trang_thai
-                                    }
-                                </Tag>
-                            </Descriptions.Item>
-                        </Descriptions>
-
-                        <Button
-                            type="primary"
-                            block
-                            style={{
-                                marginTop: 16
-                            }}
-                        >
-                            Xem hồ sơ
-                        </Button>
-                    </>
-                )}
-            </Drawer>
-        </div>
+      <Tag
+        color={
+          status === "dang_su_dung"
+            ? "green"
+            : status === "tranh_chap"
+              ? "red"
+              : "orange"
+        }
+      >
+        {status}
+      </Tag>
     );
+  };
+
+  return (
+    <>
+      <Alert
+        message="Click vào thửa đất trên bản đồ để xem thông tin chi tiết"
+        type="info"
+        showIcon
+        style={{
+          marginBottom: 12,
+        }}
+      />
+
+      <Card
+        bodyStyle={{
+          padding: 0,
+        }}
+      >
+        <Spin spinning={loading}>
+          <MapContainer
+            center={[21.0285, 105.8542]}
+            zoom={14}
+            style={{
+              height: "calc(100vh - 150px)",
+
+              width: "100%",
+            }}
+          >
+            <LayersControl position="topright">
+              <LayersControl.BaseLayer checked name="Bản đồ">
+                <TileLayer
+                  attribution="© OpenStreetMap"
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+              </LayersControl.BaseLayer>
+
+              <LayersControl.BaseLayer name="Vệ tinh">
+                <TileLayer
+                  attribution="© Esri"
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                />
+              </LayersControl.BaseLayer>
+
+              <LayersControl.BaseLayer name="Hybrid">
+                <TileLayer url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" />
+              </LayersControl.BaseLayer>
+            </LayersControl>
+
+            {data.map((item) => {
+              if (!item.geom) return null;
+
+              let geom = item.geom;
+
+              if (typeof geom === "string") {
+                geom = JSON.parse(geom);
+              }
+
+              return (
+                <GeoJSON
+                  key={item.id}
+                  data={{
+                    type: "Feature",
+
+                    geometry: geom,
+
+                    properties: item,
+                  }}
+                  style={getStyle}
+                  eventHandlers={{
+                    click: () => {
+                      handleClickThuaDat(item);
+                    },
+                  }}
+                />
+              );
+            })}
+          </MapContainer>
+        </Spin>
+      </Card>
+
+      <Modal
+        title={`📍 Thửa đất ${selected?.so_thua || ""}`}
+        open={!!selected}
+        onCancel={() => {
+          setSelected(null);
+
+          setLienKe(null);
+        }}
+        footer={null}
+        width={1000}
+        centered
+        destroyOnHidden
+      >
+        {selected && (
+          <>
+            <Descriptions bordered column={2}>
+              <Descriptions.Item label="Số thửa">
+                {selected.so_thua}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Tờ bản đồ">
+                {selected.so_to_ban_do}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Địa chỉ" span={2}>
+                {selected.dia_chi}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Tỉnh">
+                {selected.tinh}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Diện tích">
+                {selected.dien_tich} m²
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Loại đất">
+                {selected.loai_dat}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Mục đích">
+                {selected.muc_dich_su_dung}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Hình thức">
+                {selected.hinh_thuc_su_dung}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Thời hạn">
+                {selected.thoi_han_su_dung}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Nguồn gốc" span={2}>
+                {selected.nguon_goc_su_dung}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Trạng thái" span={2}>
+                {renderTrangThai(selected.trang_thai)}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Divider>🧭 Thửa đất liền kề</Divider>
+
+            {[
+              ["bac", "⬆ Bắc"],
+              ["dong", "➡ Đông"],
+              ["tay", "⬅ Tây"],
+              ["nam", "⬇ Nam"],
+            ].map(([key, label]) => {
+              const item = lienKe?.[key];
+
+              return (
+                <Descriptions
+                  key={key}
+                  bordered
+                  column={2}
+                  style={{
+                    marginBottom: 15,
+                  }}
+                >
+                  <Descriptions.Item label="Hướng">{label}</Descriptions.Item>
+
+                  <Descriptions.Item label="Số thửa">
+                    {item?.so_thua || "Không có"}
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Tờ bản đồ">
+                    {item?.so_to_ban_do || ""}
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Diện tích">
+                    {item?.dien_tich ? `${item.dien_tich} m²` : ""}
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Loại đất">
+                    {item?.loai_dat || ""}
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Địa chỉ" span={2}>
+                    {item?.dia_chi || ""}
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Trạng thái" span={2}>
+                    {renderTrangThai(item?.trang_thai)}
+                  </Descriptions.Item>
+                </Descriptions>
+              );
+            })}
+          </>
+        )}
+      </Modal>
+    </>
+  );
 }

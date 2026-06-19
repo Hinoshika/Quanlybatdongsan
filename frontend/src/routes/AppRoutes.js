@@ -8,6 +8,7 @@ import Profile from "../pages/client/profile/Profile";
 import SearchPage from "../pages/client/search/SearchPage";
 import RequestPage from "../pages/client/request/RequestPage";
 import RequestUser from "../pages/client/request/RequestUser";
+import Test from "../pages/client/Test";
 
 import Dashboard from "../pages/admin/Dashboard";
 import ThuaDat from "../pages/admin/thuadat/ThuaDat";
@@ -22,48 +23,44 @@ import Settings from "../pages/admin/settings/Settings";
 import BanDo from "../pages/admin/bando/BanDo";
 
 export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* CLIENT */}
+        <Route path="/" element={<ClientLayout />}>
+          <Route index element={<Home />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="search" element={<SearchPage />} />
+          <Route path="request" element={<RequestPage />} />
+          <Route path="requestuser" element={<RequestUser />} />
+          <Route path="Test" element={<Test />} />
+        </Route>
 
-    return (
-        <BrowserRouter>
-            <Routes>
+        {/* ADMIN */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} />
 
-                {/* CLIENT */}
-                <Route path="/" element={<ClientLayout />}>
-                    <Route index element={<Home />} />
-                    <Route path="profile" element={<Profile />} />
-                    <Route path="search" element={<SearchPage />} />
-                    <Route path="request" element={<RequestPage />} />
-                    <Route path="requestuser" element={<RequestUser />} />
-                </Route>
+          <Route path="thua-dat" element={<ThuaDat />} />
 
-                {/* ADMIN */}
-                <Route path="/admin" element={<AdminLayout />}>
+          <Route path="thuadat/map/:id" element={<ThuaDatMap />} />
 
-                    <Route index element={<Dashboard />} />
+          <Route path="cong-trinh" element={<CongTrinh />} />
 
-                    <Route path="thua-dat" element={<ThuaDat />} />
+          <Route path="chu-so-huu" element={<ChuSoHuu />} />
 
-                    <Route path="thuadat/map/:id" element={<ThuaDatMap />} />
+          <Route path="users" element={<User />} />
 
-                    <Route path="cong-trinh" element={<CongTrinh />} />
+          <Route path="bien-dong" element={<BienDong />} />
 
-                    <Route path="chu-so-huu" element={<ChuSoHuu />} />
+          <Route path="xu-ly-yeu-cau" element={<XuLyYeuCau />} />
 
-                    <Route path="users" element={<User />} />
+          <Route path="ban-do" element={<BanDo />} />
 
-                    <Route path="bien-dong" element={<BienDong />} />
+          <Route path="system-history" element={<SystemHistory />} />
 
-                    <Route path="xu-ly-yeu-cau" element={<XuLyYeuCau />} />
-
-                    <Route path="ban-do" element={<BanDo />} />
-
-                    <Route path="system-history" element={<SystemHistory />} />
-
-                    <Route path="settings" element={<Settings />} />
-
-                </Route>
-
-            </Routes>
-        </BrowserRouter>
-    );
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }

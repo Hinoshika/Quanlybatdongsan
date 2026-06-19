@@ -15,6 +15,9 @@ const chatRoute = require("./routes/chat.route");
 const lichSuChinhSuaRoutes = require("./routes/lichSuChinhSua.routes");
 const vanBanRoutes = require("./routes/vanBan.route");
 const fileRouter = require("./routes/file.route");
+const thuadatmapRoutes = require("./routes/thuadatmap.route");
+
+const thuaDat1Router = require("./routes/thuadat1.router");
 
 const app = express();
 
@@ -24,12 +27,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// =====================
-// STATIC FILES
-// =====================
-// =====================
-// STATIC FILES
-// =====================
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // =====================
@@ -48,7 +45,9 @@ app.use("/api/chat", chatRoute);
 app.use("/api/lich-su-chinh-sua", lichSuChinhSuaRoutes);
 app.use("/api/van-ban", vanBanRoutes);
 app.use("/api/file", fileRouter);
+app.use("/api/thua-dat-map", thuadatmapRoutes);
 
+app.use("/api/thuadat1", thuaDat1Router);
 // =====================
 // HEALTH CHECK
 // =====================

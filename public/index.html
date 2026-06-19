@@ -2,50 +2,278 @@
 <html>
 
 <head>
-    <meta charset="UTF-8">
-    <title>Bản đồ</title>
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<meta charset="UTF-8">
+<title>Vẽ thửa đất</title>
 
-    <style>
-        #map {
-            height: 100vh;
-        }
-    </style>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+
+<style>
+
+#map{
+    height:100vh;
+}
+
+
+.box{
+
+position:absolute;
+top:20px;
+left:60px;
+
+z-index:9999;
+
+background:white;
+
+padding:15px;
+
+border-radius:8px;
+
+}
+
+
+input{
+
+display:block;
+
+margin-bottom:10px;
+
+}
+
+</style>
+
+
 </head>
+
 
 <body>
 
-    <div id="map"></div>
 
-    <script>
-        // 1. tạo map
-        var map = L.map('map').setView([21.0285, 105.8542], 12);
+<div class="box">
 
-        // 2. load OSM tile
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+<h3>Thêm thửa đất</h3>
 
-        // 3. gọi API Hồ Tây
-        fetch("http://localhost:3000/ho-tay")
-            .then(res => res.json())
-            .then(data => {
 
-                const geo = JSON.parse(data.geojson);
+<input id="soThua"
+placeholder="Số thửa">
 
-                L.geoJSON(geo, {
-                    style: {
-                        color: "blue",
-                        fillColor: "cyan",
-                        fillOpacity: 0.3
-                    }
-                }).addTo(map);
 
-            });
+<input id="dienTich"
+placeholder="Diện tích">
 
-    </script>
+
+<button onclick="save()">
+Lưu
+</button>
+
+
+</div>
+
+
+
+<div id="map"></div>
+
+
+
+<script>
+
+
+// ================= MAP =================
+
+
+let map =
+L.map('map')
+.setView(
+[21.0285,105.8542],
+15
+);
+
+
+
+L.tileLayer(
+'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+attribution:'© OpenStreetMap'
+}
+)
+.addTo(map);
+
+
+
+
+// ================= DRAW =================
+
+
+let layerGroup =
+new L.FeatureGroup();
+
+
+map.addLayer(layerGroup);
+
+
+
+let draw =
+new L.Control.Draw({
+
+draw:{
+
+polygon:true,
+
+polyline:false,
+
+rectangle:false,
+
+circle:false,
+
+marker:false,
+
+circlemarker:false
+
+},
+
+edit:{
+featureGroup:layerGroup
+}
+
+});
+
+
+map.addControl(draw);
+
+
+
+let polygon=null;
+
+
+
+map.on(
+'L.Draw.Event.CREATED',
+function(e){
+
+
+layerGroup.clearLayers();
+
+
+polygon=e.layer;
+
+
+layerGroup.addLayer(polygon);
+
+
+console.log(
+polygon.toGeoJSON()
+);
+
+
+}
+
+);
+
+
+
+
+// ================= SAVE =================
+
+
+function save(){
+
+
+
+if(!polygon){
+
+alert(
+"Chưa vẽ thửa đất"
+);
+
+return;
+
+}
+
+
+
+let geo =
+polygon.toGeoJSON();
+
+
+
+let data={
+
+
+so_thua:
+document.getElementById("soThua").value,
+
+
+dien_tich:
+document.getElementById("dienTich").value,
+
+
+geometry:
+geo.geometry
+
+
+};
+
+
+
+
+fetch(
+"http://localhost:3000/api/thua-dat",
+{
+
+method:"POST",
+
+headers:{
+
+"Content-Type":
+"application/json"
+
+},
+
+body:
+JSON.stringify(data)
+
+}
+
+)
+
+
+.then(
+res=>res.json()
+)
+
+.then(
+res=>{
+
+
+console.log(res);
+
+
+alert(
+"Đã thêm thửa đất"
+);
+
+
+}
+
+);
+
+
+}
+
+
+
+</script>
+
 
 </body>
 
