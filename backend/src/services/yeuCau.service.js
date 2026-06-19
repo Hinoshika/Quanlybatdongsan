@@ -64,12 +64,7 @@ const YeuCauService = {
 
       newData: updated,
 
-      reason: `
-                Cập nhật trạng thái:
-                ${old.trang_thai}
-                -> 
-                ${updated.trang_thai}
-                `,
+      reason: `Chuyển trạng thái từ "${old.trang_thai}" sang "${updated.trang_thai}"`,
     });
 
     return updated;

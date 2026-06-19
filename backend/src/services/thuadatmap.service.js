@@ -20,6 +20,14 @@ const ThuaDatMapService = {
   remove: async (id) => {
     return await ThuaDatMapModel.remove(id);
   },
+
+  // =====================================
+  // THÊM CHỦ SỞ HỮU TEST
+  // =====================================
+
+  addChuSoHuu: async (data) => {
+    return await ThuaDatMapModel.addChuSoHuu(data);
+  },
 };
 
 module.exports = ThuaDatMapService;

@@ -1,11 +1,4 @@
-import {
-    Modal,
-    Form,
-    Select,
-    Button,
-    Input,
-    InputNumber
-} from "antd";
+import { Modal, Form, Select, Button, Input, InputNumber } from "antd";
 
 import { useEffect, useState } from "react";
 
@@ -14,426 +7,387 @@ import ChuSoHuuTable from "./ChuSoHuuTable";
 import ChuyenSoHuu from "./ChuyenSoHuu";
 
 import {
-    updateCongTrinh,
-    deleteCongTrinh
+  updateCongTrinh,
+  deleteCongTrinh,
 } from "../../../../services/congTrinh.service";
-
 import {
-    chuyenNhuongCongTrinh
+  getChuSoHuuCongTrinh,
+  chuyenNhuongCongTrinh,
 } from "../../../../services/soHuuCongTrinh.service";
 
-import {
-    createBienDong
-} from "../../../../services/bienDong.service";
+import { createBienDong } from "../../../../services/bienDong.service";
 
-import {
-    getChuSoHuuByCCCD
-} from "../../../../services/chuSoHuu.service";
+import { getChuSoHuuByCCCD } from "../../../../services/chuSoHuu.service";
 
 export default function CongTrinhModal({
-    open,
-    selected,
-    onClose,
-    thuaDatList,
-    onReload
+  open,
+  selected,
+  onClose,
+  thuaDatList,
+  onReload,
 }) {
+  const [form] = Form.useForm();
 
-    const [form] = Form.useForm();
+  const [openTransfer, setOpenTransfer] = useState(false);
 
-    const [openTransfer, setOpenTransfer] =
-        useState(false);
+  const [selectedOwner, setSelectedOwner] = useState(null);
 
-    const [selectedOwner, setSelectedOwner] =
-        useState(null);
+  const [chuSoHuuMoi, setChuSoHuuMoi] = useState(null);
 
-    const [chuSoHuuMoi, setChuSoHuuMoi] =
-        useState(null);
+  const [chuSoHuuList, setChuSoHuuList] = useState([]);
 
-    // ================= LOAD =================
+  // ================= LOAD =================
 
-    useEffect(() => {
+  useEffect(() => {
+    if (selected) {
+      form.setFieldsValue(selected);
 
-        if (selected) {
+      loadChuSoHuu();
+    } else {
+      form.resetFields();
 
-            form.setFieldsValue(selected);
+      setChuSoHuuList([]);
+    }
+  }, [selected]);
 
-        } else {
+  const loadChuSoHuu = async () => {
+    try {
+      const data = await getChuSoHuuCongTrinh(selected.id);
 
-            form.resetFields();
-        }
+      setChuSoHuuList(data);
+    } catch (err) {
+      console.log(err);
 
-    }, [selected, form]);
+      setChuSoHuuList([]);
+    }
+  };
+  // ================= UPDATE =================
 
-    // ================= UPDATE =================
+  const handleSubmit = async (values) => {
+    if (!selected) return;
 
-    const handleSubmit = async (values) => {
+    await updateCongTrinh(selected.id, {
+      ...values,
 
-        if (!selected) return;
+      geom: selected.geom,
+    });
 
-        await updateCongTrinh(selected.id, {
+    onClose();
 
-            ...values,
+    onReload();
+  };
 
-            geom: selected.geom
-        });
+  // ================= DELETE =================
 
-        onClose();
+  const handleDelete = (id) => {
+    Modal.confirm({
+      title: "Xác nhận xóa công trình",
 
-        onReload();
-    };
+      content: "Bạn chắc chắn muốn xóa công trình này?",
 
-    // ================= DELETE =================
+      okText: "Xóa",
 
-    const handleDelete = (id) => {
+      cancelText: "Hủy",
 
-        Modal.confirm({
+      okType: "danger",
 
-            title:
-                "Xác nhận xóa công trình",
+      centered: true,
 
-            content:
-                "Bạn chắc chắn muốn xóa công trình này?",
-
-            okText: "Xóa",
-
-            cancelText: "Hủy",
-
-            okType: "danger",
-
-            centered: true,
-
-            onOk: async () => {
-
-                try {
-
-                    await deleteCongTrinh(id);
-
-                    onClose();
-
-                    onReload();
-
-                } catch (err) {
-
-                    console.log(err);
-                }
-            }
-        });
-    };
-
-    // ================= OPEN TRANSFER =================
-
-    const handleOpenTransfer = (owner) => {
-
-        setSelectedOwner(owner);
-
-        setOpenTransfer(true);
-    };
-
-    // ================= SEARCH CCCD =================
-
-    const handleSearchCCCD = async (cccd) => {
-
+      onOk: async () => {
         try {
+          await deleteCongTrinh(id);
 
-            const res =
-                await getChuSoHuuByCCCD(cccd);
+          onClose();
 
-            const owner = res?.data || null;
-
-            setChuSoHuuMoi(owner);
-
-            return owner;
-
+          onReload();
         } catch (err) {
-
-            console.log(err);
-
-            setChuSoHuuMoi(null);
-
-            return null;
+          console.log(err);
         }
-    };
+      },
+    });
+  };
 
-    // ================= TRANSFER =================
+  // ================= OPEN TRANSFER =================
 
-    const handleTransfer = async (payload) => {
+  const handleOpenTransfer = (owner) => {
+    setSelectedOwner(owner);
 
-        try {
+    setOpenTransfer(true);
+  };
 
-            // ================= CHUYỂN SỞ HỮU =================
+  // ================= SEARCH CCCD =================
 
-            await chuyenNhuongCongTrinh({
+  const handleSearchCCCD = async (cccd) => {
+    try {
+      const res = await getChuSoHuuByCCCD(cccd);
 
-                ...payload,
+      const owner = res?.data || null;
 
-                cong_trinh_id: selected?.id
-            });
+      setChuSoHuuMoi(owner);
 
-            // ================= BIẾN ĐỘNG =================
+      return owner;
+    } catch (err) {
+      console.log(err);
 
-            await createBienDong({
+      setChuSoHuuMoi(null);
 
-                cong_trinh_id: selected?.id,
+      return null;
+    }
+  };
 
-                loai_bien_dong:
-                    payload.loai_giao_dich,
+  // ================= TRANSFER =================
 
-                chu_so_huu_cu_id:
-                    payload.chu_so_huu_cu_id,
+  const handleTransfer = async (payload) => {
+    try {
+      // ================= CHUYỂN SỞ HỮU =================
 
-                chu_so_huu_moi_id:
-                    payload.chu_so_huu_moi_id,
+      await chuyenNhuongCongTrinh({
+        ...payload,
 
-                ty_le_chuyen:
-                    payload.ty_le_chuyen,
+        cong_trinh_id: selected?.id,
+      });
 
-                gia_tri_giao_dich:
-                    payload.gia_tri_giao_dich,
+      // ================= BIẾN ĐỘNG =================
 
-                noi_dung:
-                    payload.ghi_chu,
+      await createBienDong({
+        cong_trinh_id: selected?.id,
 
-                ngay_bien_dong:
-                    payload.ngay_bien_dong,
+        loai_bien_dong: payload.loai_giao_dich,
 
-                nguoi_tao:
-                    payload.nguoi_tao
-            });
+        chu_so_huu_cu_id: payload.chu_so_huu_cu_id,
 
-            setOpenTransfer(false);
+        chu_so_huu_moi_id: payload.chu_so_huu_moi_id,
 
-            setSelectedOwner(null);
+        ty_le_chuyen: payload.ty_le_chuyen,
 
-            setChuSoHuuMoi(null);
+        gia_tri_giao_dich: payload.gia_tri_giao_dich,
 
-            onReload();
+        noi_dung: payload.ghi_chu,
 
-        } catch (err) {
+        ngay_bien_dong: payload.ngay_bien_dong,
 
-            console.log(err);
+        nguoi_tao: payload.nguoi_tao,
+      });
 
-            Modal.error({
+      await loadChuSoHuu();
 
-                title: "Lỗi chuyển nhượng",
+      setOpenTransfer(false);
 
-                content:
-                    err?.response?.data?.message ||
-                    err.message
-            });
-        }
-    };
+      setSelectedOwner(null);
 
-    return (
+      setChuSoHuuMoi(null);
 
-        <>
-            <Modal
-                title="Thông tin công trình"
-                open={open}
-                onCancel={onClose}
-                onOk={() => form.submit()}
-                width={950}
-                destroyOnHidden
-                forceRender
-            >
+      onReload();
+    } catch (err) {
+      console.log(err);
 
-                {/* ================= FORM ================= */}
+      Modal.error({
+        title: "Lỗi chuyển nhượng",
 
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleSubmit}
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                            "1fr 1fr 1fr",
-                        gap: 12
-                    }}
-                >
+        content: err?.response?.data?.message || err.message,
+      });
+    }
+  };
 
-                    <Form.Item
-                        name="ten_cong_trinh"
-                        label="Tên công trình"
-                        rules={[{ required: true, message: "Nhập tên công trình" }]}
-                    >
-                        <Input />
-                    </Form.Item>
+  return (
+    <>
+      <Modal
+        title="Thông tin công trình"
+        open={open}
+        onCancel={onClose}
+        onOk={() => form.submit()}
+        width={950}
+        destroyOnHidden
+        forceRender
+      >
+        {/* ================= FORM ================= */}
 
-                    <Form.Item
-                        name="loai_cong_trinh"
-                        label="Loại công trình"
-                        rules={[{ required: true, message: "Chọn loại công trình" }]}
-                    >
-                        <Select
-                            options={[
-                                { value: "Công trình dân dụng", label: "Công trình dân dụng" },
-                                { value: "Công trình công nghiệp", label: "Công trình công nghiệp" },
-                                { value: "Công trình giao thông", label: "Công trình giao thông" },
-                                { value: "Công trình nông nghiệp và phát triển nông thôn", label: "Công trình nông nghiệp và phát triển nông thôn" },
-                                { value: "Công trình thủy lợi", label: "Công trình thủy lợi" },
-                                { value: "Công trình văn hóa, thể thao và du lịch", label: "Công trình văn hóa, thể thao và du lịch" },
-                                { value: "Công trình y tế và giáo dục", label: "Công trình y tế và giáo dục" },
-                                { value: "Công trình công cộng khác", label: "Công trình công cộng khác" }
-                            ]}
-                        />
-                    </Form.Item>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: 12,
+          }}
+        >
+          <Form.Item
+            name="ten_cong_trinh"
+            label="Tên công trình"
+            rules={[{ required: true, message: "Nhập tên công trình" }]}
+          >
+            <Input />
+          </Form.Item>
 
-                    <Form.Item
-                        name="so_tang"
-                        label="Số tầng"
-                        rules={[{ required: true, message: "Nhập số tầng" }]}
-                    >
-                        <InputNumber style={{ width: "100%" }} min={0} />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="ket_cau"
-                        label="Kết cấu"
-                        rules={[{ required: true, message: "Nhập kết cấu" }]}
-                    >
-                        <Input />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="dien_tich_xay_dung"
-                        label="Diện tích xây dựng"
-                        rules={[{ required: true, message: "Nhập diện tích xây dựng" }]}
-                    >
-                        <InputNumber style={{ width: "100%" }} />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="tong_dien_tich_san"
-                        label="Tổng diện tích sàn"
-                        rules={[{ required: true, message: "Nhập tổng diện tích sàn" }]}
-                    >
-                        <InputNumber style={{ width: "100%" }} />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="cap_hang"
-                        label="Cấp hạng"
-                    >
-                        <Select options={[
-                            { value: "Cấp 1", label: "Cấp 1" },
-                            { value: "Cấp 2", label: "Cấp 2" },
-                            { value: "Cấp 3", label: "Cấp 3" },
-                            { value: "Cấp 4", label: "Cấp 4" },
-                            { value: "Cấp Đặc biệt", label: "Cấp Đặc biệt" }
-                        ]} />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="nam_xay_dung"
-                        label="Năm xây dựng"
-                    >
-                        <InputNumber
-                            style={{ width: "100%" }}
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="hinh_thuc_so_huu"
-                        label="Hình thức sở hữu"
-                    >
-                        <Select options={[
-                            { value: "Sử hữu Chung", label: "Sử hữu Chung" },
-                            { value: "Sử hữu Riêng", label: "Sử hữu Riêng" },
-                            { value: "Sử hữu Nhà Nước", label: "Sử hữu Nhà Nước" }
-                        ]} />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="thoi_han_so_huu"
-                        label="Thời hạn sở hữu"
-                    >
-                        <Input />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="trang_thai"
-                        label="Trạng thái"
-                    >
-                        <Select
-                            options={[
-                                {
-                                    value: "Đang sử dụng",
-                                    label: "Đang sử dụng"
-                                },
-                                {
-                                    value: "Chưa hoàn thành",
-                                    label: "Chưa hoàn thành"
-                                },
-                                {
-                                    value: "thu hồi",
-                                    label: "Thu hồi"
-                                }
-                            ]}
-                        />
-                    </Form.Item>
-
-                </Form>
-
-                {/* ================= CHỦ SỞ HỮU ================= */}
-
-                <div style={{ marginTop: 20 }}>
-
-                    <ChuSoHuuTable
-                        detail={selected || {}}
-                        onOpenTransfer={
-                            handleOpenTransfer
-                        }
-                    />
-
-                </div>
-
-                {/* ================= MAP ================= */}
-
-                <div style={{ marginTop: 20 }}>
-
-                    <CongTrinhMap
-                        selected={selected}
-                    />
-
-                </div>
-
-                {/* ================= DELETE ================= */}
-
+          <Form.Item
+            name="loai_cong_trinh"
+            label="Loại công trình"
+            rules={[{ required: true, message: "Chọn loại công trình" }]}
+          >
+            <Select
+              options={[
+                { value: "Công trình dân dụng", label: "Công trình dân dụng" },
                 {
-                    selected && (
-
-                        <Button
-                            danger
-                            style={{
-                                marginTop: 15
-                            }}
-                            onClick={() =>
-                                handleDelete(selected.id)
-                            }
-                        >
-                            Xóa công trình
-                        </Button>
-                    )
-                }
-
-            </Modal>
-
-            {/* ================= CHUYỂN NHƯỢNG ================= */}
-
-            <ChuyenSoHuu
-                open={openTransfer}
-                selectedOwner={selectedOwner}
-                chuSoHuuMoi={chuSoHuuMoi}
-                onSearchCCCD={handleSearchCCCD}
-                onClose={() => {
-
-                    setOpenTransfer(false);
-
-                    setSelectedOwner(null);
-
-                    setChuSoHuuMoi(null);
-                }}
-                onSubmit={handleTransfer}
+                  value: "Công trình công nghiệp",
+                  label: "Công trình công nghiệp",
+                },
+                {
+                  value: "Công trình giao thông",
+                  label: "Công trình giao thông",
+                },
+                {
+                  value: "Công trình nông nghiệp và phát triển nông thôn",
+                  label: "Công trình nông nghiệp và phát triển nông thôn",
+                },
+                { value: "Công trình thủy lợi", label: "Công trình thủy lợi" },
+                {
+                  value: "Công trình văn hóa, thể thao và du lịch",
+                  label: "Công trình văn hóa, thể thao và du lịch",
+                },
+                {
+                  value: "Công trình y tế và giáo dục",
+                  label: "Công trình y tế và giáo dục",
+                },
+                {
+                  value: "Công trình công cộng khác",
+                  label: "Công trình công cộng khác",
+                },
+              ]}
             />
-        </>
-    );
+          </Form.Item>
+          <Form.Item name="dia_chi" label="Địa chỉ">
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="so_tang"
+            label="Số tầng"
+            rules={[{ required: true, message: "Nhập số tầng" }]}
+          >
+            <InputNumber style={{ width: "100%" }} min={0} />
+          </Form.Item>
+
+          <Form.Item
+            name="ket_cau"
+            label="Kết cấu"
+            rules={[{ required: true, message: "Nhập kết cấu" }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="dien_tich_xay_dung"
+            label="Diện tích xây dựng"
+            rules={[{ required: true, message: "Nhập diện tích xây dựng" }]}
+          >
+            <InputNumber style={{ width: "100%" }} />
+          </Form.Item>
+
+          <Form.Item
+            name="dien_tich_san"
+            label="Tổng diện tích sàn"
+            rules={[{ required: true, message: "Nhập tổng diện tích sàn" }]}
+          >
+            <InputNumber style={{ width: "100%" }} />
+          </Form.Item>
+
+          <Form.Item name="cap_hang" label="Cấp hạng">
+            <Select
+              options={[
+                { value: "Cấp 1", label: "Cấp 1" },
+                { value: "Cấp 2", label: "Cấp 2" },
+                { value: "Cấp 3", label: "Cấp 3" },
+                { value: "Cấp 4", label: "Cấp 4" },
+                { value: "Cấp Đặc biệt", label: "Cấp Đặc biệt" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item name="nam_xay_dung" label="Năm xây dựng">
+            <InputNumber style={{ width: "100%" }} />
+          </Form.Item>
+
+          <Form.Item name="hinh_thuc_so_huu" label="Hình thức sở hữu">
+            <Select
+              options={[
+                { value: "Sử hữu Chung", label: "Sử hữu Chung" },
+                { value: "Sử hữu Riêng", label: "Sử hữu Riêng" },
+                { value: "Sử hữu Nhà Nước", label: "Sử hữu Nhà Nước" },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item name="thoi_han_so_huu" label="Thời hạn sở hữu">
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="trang_thai" label="Trạng thái">
+            <Select
+              options={[
+                {
+                  value: "Đang sử dụng",
+                  label: "Đang sử dụng",
+                },
+                {
+                  value: "Chưa hoàn thành",
+                  label: "Chưa hoàn thành",
+                },
+                {
+                  value: "thu hồi",
+                  label: "Thu hồi",
+                },
+              ]}
+            />
+          </Form.Item>
+        </Form>
+
+        {/* ================= CHỦ SỞ HỮU ================= */}
+
+        <div style={{ marginTop: 20 }}>
+          <ChuSoHuuTable
+            data={chuSoHuuList}
+            onOpenTransfer={handleOpenTransfer}
+          />
+        </div>
+
+        {/* ================= MAP ================= */}
+
+        <div style={{ marginTop: 20 }}>
+          <CongTrinhMap selected={selected} />
+        </div>
+
+        {/* ================= DELETE ================= */}
+
+        {selected && (
+          <Button
+            danger
+            style={{
+              marginTop: 15,
+            }}
+            onClick={() => handleDelete(selected.id)}
+          >
+            Xóa công trình
+          </Button>
+        )}
+      </Modal>
+
+      {/* ================= CHUYỂN NHƯỢNG ================= */}
+
+      <ChuyenSoHuu
+        open={openTransfer}
+        selectedOwner={selectedOwner}
+        chuSoHuuMoi={chuSoHuuMoi}
+        onSearchCCCD={handleSearchCCCD}
+        onClose={() => {
+          setOpenTransfer(false);
+
+          setSelectedOwner(null);
+
+          setChuSoHuuMoi(null);
+        }}
+        onSubmit={handleTransfer}
+      />
+    </>
+  );
 }

@@ -1,10 +1,9 @@
 const db = require("../config/db");
 
 const ThuaDatModel = {
-
-    // ================= GET ALL =================
-    getAll: async () => {
-        const result = await db.query(`
+  // ================= GET ALL =================
+  getAll: async () => {
+    const result = await db.query(`
         SELECT 
             id,
             so_thua,
@@ -25,29 +24,40 @@ const ThuaDatModel = {
         WHERE deleted_at IS NULL   -- 🔥 THÊM DÒNG NÀY
     `);
 
-        return result.rows;
-    },
-    // ================= CREATE =================
-    create: async (data) => {
+    return result.rows;
+  },
+  // ================= CREATE =================
+  create: async (data) => {
+    const client = await db.connect();
 
-        const polygon = data.polygon;
+    try {
+      await client.query("BEGIN");
 
-        if (!Array.isArray(polygon) || polygon.length < 3) {
-            throw new Error("Polygon không hợp lệ");
-        }
+      const polygon = data.polygon;
 
-        const coords = polygon.map(p => [p[1], p[0]]);
+      if (!Array.isArray(polygon) || polygon.length < 3) {
+        throw new Error("Polygon không hợp lệ");
+      }
 
-        // đóng polygon
-        coords.push(coords[0]);
+      const coords = polygon.map((p) => [p[1], p[0]]);
 
-        const geojson = {
-            type: "Polygon",
-            coordinates: [coords]
-        };
+      // đóng polygon
+      coords.push(coords[0]);
 
-        const result = await db.query(`
-        INSERT INTO thua_dat (
+      const geojson = {
+        type: "Polygon",
+
+        coordinates: [coords],
+      };
+
+      // ==========================
+      // 1. TẠO THỬA ĐẤT
+      // ==========================
+
+      const result = await client.query(
+        `
+        INSERT INTO thua_dat
+        (
             so_thua,
             so_to_ban_do,
             dia_chi,
@@ -57,25 +67,122 @@ const ThuaDatModel = {
             trang_thai,
             geom
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7, ST_GeomFromGeoJSON($8))
+
+        VALUES
+        (
+            $1,$2,$3,$4,$5,$6,$7,
+            ST_GeomFromGeoJSON($8)
+        )
+
         RETURNING *
-    `, [
-            data.so_thua,
-            data.so_to_ban_do,
-            data.dia_chi,
-            data.tinh,
-            data.dien_tich,
-            data.loai_dat,
-            data.trang_thai,
-            JSON.stringify(geojson)
-        ]);
+        `,
+        [
+          data.so_thua,
 
-        return result.rows[0];
-    },
-    // ================= UPDATE =================
-    update: async (id, data) => {
+          data.so_to_ban_do,
 
-        const result = await db.query(`
+          data.dia_chi,
+
+          data.tinh,
+
+          data.dien_tich,
+
+          data.loai_dat,
+
+          data.trang_thai,
+
+          JSON.stringify(geojson),
+        ],
+      );
+
+      const thuaDat = result.rows[0];
+
+      // ==========================
+      // 2. TẠO CHỦ SỞ HỮU
+      // ==========================
+
+      const owner = data.chu_so_huu;
+
+      if (owner && owner.so_cccd) {
+        let ownerResult = await client.query(
+          `
+            SELECT id
+            FROM chu_so_huu
+            WHERE so_cccd=$1
+            AND deleted_at IS NULL
+            `,
+          [owner.so_cccd],
+        );
+
+        let chuSoHuuId;
+
+        // đã tồn tại
+        if (ownerResult.rows.length) {
+          chuSoHuuId = ownerResult.rows[0].id;
+        }
+
+        // chưa có
+        else {
+          const insertOwner = await client.query(
+            `
+                INSERT INTO chu_so_huu
+                (
+                    ho_ten,
+                    so_cccd,
+                    so_dien_thoai,
+                    dia_chi
+                )
+
+                VALUES
+                (
+                    $1,$2,$3,$4
+                )
+
+                RETURNING id
+                `,
+            [owner.ho_ten, owner.so_cccd, owner.so_dien_thoai, owner.dia_chi],
+          );
+
+          chuSoHuuId = insertOwner.rows[0].id;
+        }
+
+        // ==========================
+        // 3. GÁN QUYỀN SỞ HỮU
+        // ==========================
+
+        await client.query(
+          `
+            INSERT INTO so_huu_thua_dat
+            (
+                thua_dat_id,
+                chu_so_huu_id,
+                ty_le_so_huu
+            )
+
+            VALUES
+            (
+                $1,$2,$3
+            )
+            `,
+          [thuaDat.id, chuSoHuuId, owner.ty_le_so_huu || 100],
+        );
+      }
+
+      await client.query("COMMIT");
+
+      return thuaDat;
+    } catch (error) {
+      await client.query("ROLLBACK");
+
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+  // ================= UPDATE =================
+  update: async (id, data) => {
+    const result = await db.query(
+      `
         UPDATE thua_dat
         SET
             so_thua = $1,
@@ -92,41 +199,45 @@ const ThuaDatModel = {
             updated_at = NOW()
         WHERE id = $12
         RETURNING *
-    `, [
-            data.so_thua,
-            data.so_to_ban_do,
-            data.dia_chi,
-            data.tinh,
-            data.dien_tich,
-            data.loai_dat,
-            data.muc_dich_su_dung,
-            data.hinh_thuc_su_dung,
-            data.thoi_han_su_dung,
-            data.nguon_goc_su_dung,
-            data.trang_thai,
-            id
-        ]);
+    `,
+      [
+        data.so_thua,
+        data.so_to_ban_do,
+        data.dia_chi,
+        data.tinh,
+        data.dien_tich,
+        data.loai_dat,
+        data.muc_dich_su_dung,
+        data.hinh_thuc_su_dung,
+        data.thoi_han_su_dung,
+        data.nguon_goc_su_dung,
+        data.trang_thai,
+        id,
+      ],
+    );
 
-        return result.rows[0];
-    },
+    return result.rows[0];
+  },
 
-    // ================= DELETE =================
-    delete: async (id) => {
-
-        await db.query(`
+  // ================= DELETE =================
+  delete: async (id) => {
+    await db.query(
+      `
         UPDATE thua_dat
         SET
             deleted_at = NOW()
         WHERE id = $1
-    `, [id]);
+    `,
+      [id],
+    );
 
-        return true;
-    },
+    return true;
+  },
 
-    // ================= GET BY ID =================
-    getById: async (id) => {
-
-        const result = await db.query(`
+  // ================= GET BY ID =================
+  getById: async (id) => {
+    const result = await db.query(
+      `
         SELECT
             t.id,
             t.so_thua,
@@ -192,57 +303,56 @@ const ThuaDatModel = {
 
         /* ================= CÔNG TRÌNH ================= */
         LEFT JOIN cong_trinh ct
-            ON ct.thua_dat_id = t.id
+        ON ct.thua_dat_id = t.id
+        AND ct.deleted_at IS NULL
 
         WHERE t.id = $1
           AND t.deleted_at IS NULL
 
         GROUP BY t.id
-    `, [id]);
+    `,
+      [id],
+    );
 
-        return result.rows[0];
-    },
+    return result.rows[0];
+  },
 
-    // ================= FILTER SEARCH (NO CCCD) =================
-    search: async (filters) => {
-        const {
-            loai_dat,
-            trang_thai,
-            tinh,
-            dien_tich_min,
-            dien_tich_max
-        } = filters;
+  // ================= FILTER SEARCH (NO CCCD) =================
+  search: async (filters) => {
+    const { loai_dat, trang_thai, tinh, dien_tich_min, dien_tich_max } =
+      filters;
 
-        let where = `WHERE thua_dat.deleted_at IS NULL`;
-        let values = [];
-        let idx = 1;
+    let where = `WHERE thua_dat.deleted_at IS NULL`;
+    let values = [];
+    let idx = 1;
 
-        if (loai_dat) {
-            where += ` AND loai_dat = $${idx++}`;
-            values.push(loai_dat);
-        }
+    if (loai_dat) {
+      where += ` AND loai_dat = $${idx++}`;
+      values.push(loai_dat);
+    }
 
-        if (trang_thai) {
-            where += ` AND trang_thai = $${idx++}`;
-            values.push(trang_thai);
-        }
+    if (trang_thai) {
+      where += ` AND trang_thai = $${idx++}`;
+      values.push(trang_thai);
+    }
 
-        if (tinh) {
-            where += ` AND tinh ILIKE $${idx++}`;
-            values.push(`%${tinh}%`);
-        }
+    if (tinh) {
+      where += ` AND tinh ILIKE $${idx++}`;
+      values.push(`%${tinh}%`);
+    }
 
-        if (dien_tich_min) {
-            where += ` AND dien_tich >= $${idx++}`;
-            values.push(dien_tich_min);
-        }
+    if (dien_tich_min) {
+      where += ` AND dien_tich >= $${idx++}`;
+      values.push(dien_tich_min);
+    }
 
-        if (dien_tich_max) {
-            where += ` AND dien_tich <= $${idx++}`;
-            values.push(dien_tich_max);
-        }
+    if (dien_tich_max) {
+      where += ` AND dien_tich <= $${idx++}`;
+      values.push(dien_tich_max);
+    }
 
-        const result = await db.query(`
+    const result = await db.query(
+      `
             SELECT
                 id,
                 so_thua,
@@ -258,15 +368,17 @@ const ThuaDatModel = {
             FROM thua_dat
             ${where}
             ORDER BY id DESC
-        `, values);
+        `,
+      values,
+    );
 
-        return result.rows;
-    },
+    return result.rows;
+  },
 
-    // ================= SEARCH BY CCCD =================
-    searchByCCCD: async (so_cccd) => {
-
-        const result = await db.query(`
+  // ================= SEARCH BY CCCD =================
+  searchByCCCD: async (so_cccd) => {
+    const result = await db.query(
+      `
             SELECT
                 td.id,
                 td.so_thua,
@@ -326,26 +438,31 @@ const ThuaDatModel = {
             GROUP BY td.id
 
             ORDER BY td.id DESC
-        `, [so_cccd]);
+        `,
+      [so_cccd],
+    );
 
-        return result.rows;
-    },
+    return result.rows;
+  },
 
-    // ================= SEARCH BY MAP (Tìm theo tọa độ) =================
-    searchByMap: async (lat, lng, radius = 500) => {
-
-        const result = await db.query(`
+  // ================= SEARCH BY MAP (Tìm theo tọa độ) =================
+  searchByMap: async (lat, lng, radius = 500) => {
+    const result = await db.query(
+      `
 
         SELECT
             td.id,
-            td.so_thua,
-            td.so_to_ban_do,
-            td.dia_chi,
-            td.tinh,
-            td.dien_tich,
-            td.loai_dat,
-            td.trang_thai,
-            td.muc_dich_su_dung,
+                td.so_thua,
+                td.so_to_ban_do,
+                td.dia_chi,
+                td.tinh,
+                td.dien_tich,
+                td.loai_dat,
+                td.muc_dich_su_dung,
+                td.hinh_thuc_su_dung,
+                td.thoi_han_su_dung,
+                td.nguon_goc_su_dung,
+                td.trang_thai,
 
             ST_AsGeoJSON(td.geom)::json AS geom,
 
@@ -404,26 +521,23 @@ const ThuaDatModel = {
 
         ORDER BY distance ASC
 
-    `, [
-            parseFloat(lat),
-            parseFloat(lng),
-            parseFloat(radius)
-        ]);
+    `,
+      [parseFloat(lat), parseFloat(lng), parseFloat(radius)],
+    );
 
-        return result.rows;
-    },
-    // ================= CHECK OVERLAP =================
-    checkOverlap: async (polygon, excludeId = null) => {
+    return result.rows;
+  },
+  // ================= CHECK OVERLAP =================
+  checkOverlap: async (polygon, excludeId = null) => {
+    const coords = polygon.map((p) => [p[1], p[0]]);
+    coords.push(coords[0]);
 
-        const coords = polygon.map(p => [p[1], p[0]]);
-        coords.push(coords[0]);
+    const geojson = {
+      type: "Polygon",
+      coordinates: [coords],
+    };
 
-        const geojson = {
-            type: "Polygon",
-            coordinates: [coords]
-        };
-
-        let sql = `
+    let sql = `
         SELECT id, so_thua, so_to_ban_do
         FROM thua_dat
         WHERE deleted_at IS NULL
@@ -437,80 +551,87 @@ const ThuaDatModel = {
         )
     `;
 
-        const params = [JSON.stringify(geojson)];
+    const params = [JSON.stringify(geojson)];
 
-        if (excludeId) {
-            sql += ` AND id <> $2`;
-            params.push(excludeId);
-        }
+    if (excludeId) {
+      sql += ` AND id <> $2`;
+      params.push(excludeId);
+    }
 
-        const result = await db.query(sql, params);
-        return result.rows;
-    },
-    merge: async (thuaIds) => {
-        const client = await db.connect();
+    const result = await db.query(sql, params);
+    return result.rows;
+  },
+  merge: async (thuaIds) => {
+    const client = await db.connect();
 
-        try {
-            await client.query("BEGIN");
+    try {
+      await client.query("BEGIN");
 
-            // ================= GET THỬA =================
-            const oldResult = await client.query(`
+      // ================= GET THỬA =================
+      const oldResult = await client.query(
+        `
             SELECT *
             FROM thua_dat
             WHERE id = ANY($1)
               AND deleted_at IS NULL
-        `, [thuaIds]);
+        `,
+        [thuaIds],
+      );
 
-            const thuas = oldResult.rows;
+      const thuas = oldResult.rows;
 
-            if (thuas.length < 2) {
-                throw new Error("Phải chọn ít nhất 2 thửa");
-            }
+      if (thuas.length < 2) {
+        throw new Error("Phải chọn ít nhất 2 thửa");
+      }
 
-            // ================= VALID =================
-            const base = thuas[0];
+      // ================= VALID =================
+      const base = thuas[0];
 
-            if (thuas.some(t => t.so_to_ban_do !== base.so_to_ban_do))
-                throw new Error("Các thửa phải cùng tờ bản đồ");
+      if (thuas.some((t) => t.so_to_ban_do !== base.so_to_ban_do))
+        throw new Error("Các thửa phải cùng tờ bản đồ");
 
-            if (thuas.some(t => t.loai_dat !== base.loai_dat))
-                throw new Error("Các thửa phải cùng loại đất");
+      if (thuas.some((t) => t.loai_dat !== base.loai_dat))
+        throw new Error("Các thửa phải cùng loại đất");
 
-            if (thuas.some(t => t.muc_dich_su_dung !== base.muc_dich_su_dung))
-                throw new Error("Các thửa phải cùng mục đích sử dụng");
+      if (thuas.some((t) => t.muc_dich_su_dung !== base.muc_dich_su_dung))
+        throw new Error("Các thửa phải cùng mục đích sử dụng");
 
-            if (thuas.some(t => t.hinh_thuc_su_dung !== "Sử Dụng Riêng"))
-                throw new Error("Chỉ được gộp thửa sử dụng riêng");
+      if (thuas.some((t) => t.hinh_thuc_su_dung !== "Sử Dụng Riêng"))
+        throw new Error("Chỉ được gộp thửa sử dụng riêng");
 
-            if (thuas.some(t => t.trang_thai !== "Đang sử dụng"))
-                throw new Error("Chỉ được gộp thửa đang sử dụng");
+      if (thuas.some((t) => t.trang_thai !== "Đang sử dụng"))
+        throw new Error("Chỉ được gộp thửa đang sử dụng");
 
-            // ================= TỔNG DIỆN TÍCH =================
-            const tongDienTich = thuas.reduce(
-                (s, t) => s + Number(t.dien_tich || 0),
-                0
-            );
+      // ================= TỔNG DIỆN TÍCH =================
+      const tongDienTich = thuas.reduce(
+        (s, t) => s + Number(t.dien_tich || 0),
+        0,
+      );
 
-            // ================= MERGE GEOM =================
-            const geomResult = await client.query(`
+      // ================= MERGE GEOM =================
+      const geomResult = await client.query(
+        `
             SELECT ST_AsGeoJSON(ST_Union(geom))::json AS geom
             FROM thua_dat
             WHERE id = ANY($1)
-        `, [thuaIds]);
+        `,
+        [thuaIds],
+      );
 
-            const geom = geomResult.rows[0].geom;
+      const geom = geomResult.rows[0].geom;
 
-            // ================= SỐ THỬA MỚI =================
-            const maxResult = await client.query(`
+      // ================= SỐ THỬA MỚI =================
+      const maxResult = await client.query(`
             SELECT COALESCE(MAX(CAST(so_thua AS INTEGER)),0) + 1 AS so_thua
             FROM thua_dat
             WHERE so_thua ~ '^[0-9]+$'
         `);
 
-            const soThuaMoi = maxResult.rows[0].so_thua;
+      const soThuaMoi = maxResult.rows[0].so_thua;
 
-            // ================= INSERT THỬA MỚI =================
-            const insertResult = await client.query(`
+      // ================= INSERT THỬA MỚI =================
+      const insertResult = await client.query(
+        `
             INSERT INTO thua_dat (
                 so_thua,
                 so_to_ban_do,
@@ -531,97 +652,115 @@ const ThuaDatModel = {
                 ST_GeomFromGeoJSON($11)
             )
             RETURNING *
-        `, [
-                soThuaMoi,
-                base.so_to_ban_do,
-                base.dia_chi,
-                base.tinh,
-                tongDienTich,
-                base.loai_dat,
-                base.muc_dich_su_dung,
-                base.hinh_thuc_su_dung,
-                base.thoi_han_su_dung,
-                base.nguon_goc_su_dung,
-                geom
-            ]);
+        `,
+        [
+          soThuaMoi,
+          base.so_to_ban_do,
+          base.dia_chi,
+          base.tinh,
+          tongDienTich,
+          base.loai_dat,
+          base.muc_dich_su_dung,
+          base.hinh_thuc_su_dung,
+          base.thoi_han_su_dung,
+          base.nguon_goc_su_dung,
+          geom,
+        ],
+      );
 
-            const newThua = insertResult.rows[0];
+      const newThua = insertResult.rows[0];
 
-            // =========================================================
-            // 🧠 FIX QUAN TRỌNG: TRÁNH DUPLICATE CHỦ SỞ HỮU
-            // =========================================================
+      // =========================================================
+      // 🧠 FIX QUAN TRỌNG: TRÁNH DUPLICATE CHỦ SỞ HỮU
+      // =========================================================
 
-            // 1. lấy danh sách owner UNIQUE từ tất cả thửa cũ
-            const ownersRes = await client.query(`
+      // 1. lấy danh sách owner UNIQUE từ tất cả thửa cũ
+      const ownersRes = await client.query(
+        `
             SELECT DISTINCT chu_so_huu_id, ty_le_so_huu
             FROM so_huu_thua_dat
             WHERE thua_dat_id = ANY($1)
-        `, [thuaIds]);
+        `,
+        [thuaIds],
+      );
 
-            // 2. xoá toàn bộ quan hệ cũ
-            await client.query(`
+      // 2. xoá toàn bộ quan hệ cũ
+      await client.query(
+        `
             DELETE FROM so_huu_thua_dat
             WHERE thua_dat_id = ANY($1)
-        `, [thuaIds]);
+        `,
+        [thuaIds],
+      );
 
-            // 3. insert lại vào thửa mới (KHÔNG DUPLICATE)
-            for (const o of ownersRes.rows) {
-                await client.query(`
+      // 3. insert lại vào thửa mới (KHÔNG DUPLICATE)
+      for (const o of ownersRes.rows) {
+        await client.query(
+          `
                 INSERT INTO so_huu_thua_dat (
                     thua_dat_id,
                     chu_so_huu_id,
                     ty_le_so_huu
                 )
                 VALUES ($1,$2,$3)
-            `, [newThua.id, o.chu_so_huu_id, o.ty_le_so_huu]);
-            }
+            `,
+          [newThua.id, o.chu_so_huu_id, o.ty_le_so_huu],
+        );
+      }
 
-            // =========================================================
-            // 🧠 CONG TRÌNH (CHUYỂN 1 LẦN DUY NHẤT)
-            // =========================================================
+      // =========================================================
+      // 🧠 CONG TRÌNH (CHUYỂN 1 LẦN DUY NHẤT)
+      // =========================================================
 
-            await client.query(`
+      await client.query(
+        `
             UPDATE cong_trinh
             SET thua_dat_id = $1
             WHERE thua_dat_id = ANY($2)
-        `, [newThua.id, thuaIds]);
+        `,
+        [newThua.id, thuaIds],
+      );
 
-            // ================= MARK OLD =================
-            await client.query(`
+      // ================= MARK OLD =================
+      await client.query(
+        `
             UPDATE thua_dat
             SET deleted_at = NOW(),
                 trang_thai = 'da_gop'
             WHERE id = ANY($1)
-        `, [thuaIds]);
+        `,
+        [thuaIds],
+      );
 
-            await client.query("COMMIT");
+      await client.query("COMMIT");
 
-            return newThua;
-
-        } catch (err) {
-            await client.query("ROLLBACK");
-            throw err;
-        } finally {
-            client.release();
-        }
-    },
-    // ================= GET BY IDS =================
-    getByIds: async (thuaIds) => {
-
-        const result = await db.query(`
+      return newThua;
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
+  // ================= GET BY IDS =================
+  getByIds: async (thuaIds) => {
+    const result = await db.query(
+      `
         SELECT *
         FROM thua_dat
         WHERE id = ANY($1)
         AND deleted_at IS NULL
-    `, [thuaIds]);
+    `,
+      [thuaIds],
+    );
 
-        return result.rows;
-    },
+    return result.rows;
+  },
 
-    // ================= KIỂM TRA LIỀN KỀ =================
-    checkAdjacent: async (thuaIds) => {
-
-        const result = await db.query(`
+  // ================= KIỂM TRA LIỀN KỀ =================
+  checkAdjacent: async (thuaIds) => {
+    const result = await db.query(
+      `
         SELECT COUNT(*)::int AS total
         FROM (
             SELECT
@@ -635,50 +774,50 @@ const ThuaDatModel = {
                 AND b.id = ANY($1)
                 AND ST_Touches(a.geom, b.geom)
         ) x
-    `, [thuaIds]);
+    `,
+      [thuaIds],
+    );
 
-        return (
-            result.rows[0].total >=
-            thuaIds.length - 1
-        );
-    },
-    // ================= TÁCH THỬA =================
-    tach: async ({ thua_dat_id, thua_con }) => {
+    return result.rows[0].total >= thuaIds.length - 1;
+  },
+  // ================= TÁCH THỬA =================
+  tach: async ({ thua_dat_id, thua_con }) => {
+    const client = await db.connect();
 
-        const client = await db.connect();
+    try {
+      await client.query("BEGIN");
 
-        try {
-
-            await client.query("BEGIN");
-
-            const oldResult = await client.query(`
+      const oldResult = await client.query(
+        `
             SELECT *
             FROM thua_dat
             WHERE id = $1
             AND deleted_at IS NULL
-        `, [thua_dat_id]);
+        `,
+        [thua_dat_id],
+      );
 
-            const oldThua = oldResult.rows[0];
+      const oldThua = oldResult.rows[0];
 
-            if (!oldThua) {
-                throw new Error("Không tìm thấy thửa đất");
-            }
+      if (!oldThua) {
+        throw new Error("Không tìm thấy thửa đất");
+      }
 
-            // tạo các thửa mới
-            const created = [];
+      // tạo các thửa mới
+      const created = [];
 
-            for (const item of thua_con) {
+      for (const item of thua_con) {
+        const coords = item.coordinates.map((p) => [p[0], p[1]]);
 
-                const coords = item.coordinates.map(p => [p[0], p[1]]);
+        coords.push(coords[0]);
 
-                coords.push(coords[0]);
+        const geojson = {
+          type: "Polygon",
+          coordinates: [coords],
+        };
 
-                const geojson = {
-                    type: "Polygon",
-                    coordinates: [coords]
-                };
-
-                const result = await client.query(`
+        const result = await client.query(
+          `
                 INSERT INTO thua_dat (
                     so_thua,
                     so_to_ban_do,
@@ -699,83 +838,84 @@ const ThuaDatModel = {
                     ST_GeomFromGeoJSON($11)
                 )
                 RETURNING *
-            `, [
-                    item.so_thua_moi,
-                    oldThua.so_to_ban_do,
-                    oldThua.dia_chi,
-                    oldThua.tinh,
-                    item.dien_tich,
-                    oldThua.loai_dat,
-                    oldThua.muc_dich_su_dung,
-                    oldThua.hinh_thuc_su_dung,
-                    oldThua.thoi_han_su_dung,
-                    oldThua.nguon_goc_su_dung,
-                    JSON.stringify(geojson)
-                ]);
+            `,
+          [
+            item.so_thua_moi,
+            oldThua.so_to_ban_do,
+            oldThua.dia_chi,
+            oldThua.tinh,
+            item.dien_tich,
+            oldThua.loai_dat,
+            oldThua.muc_dich_su_dung,
+            oldThua.hinh_thuc_su_dung,
+            oldThua.thoi_han_su_dung,
+            oldThua.nguon_goc_su_dung,
+            JSON.stringify(geojson),
+          ],
+        );
 
-                created.push(result.rows[0]);
-            }
+        created.push(result.rows[0]);
+      }
 
-            // copy chủ sở hữu
-            const owners = await client.query(`
+      // copy chủ sở hữu
+      const owners = await client.query(
+        `
             SELECT *
             FROM so_huu_thua_dat
             WHERE thua_dat_id = $1
-        `, [thua_dat_id]);
+        `,
+        [thua_dat_id],
+      );
 
-            for (const thua of created) {
-
-                for (const owner of owners.rows) {
-
-                    await client.query(`
+      for (const thua of created) {
+        for (const owner of owners.rows) {
+          await client.query(
+            `
                     INSERT INTO so_huu_thua_dat (
                         thua_dat_id,
                         chu_so_huu_id,
                         ty_le_so_huu
                     )
                     VALUES ($1,$2,$3)
-                `, [
-                        thua.id,
-                        owner.chu_so_huu_id,
-                        owner.ty_le_so_huu
-                    ]);
-                }
-            }
+                `,
+            [thua.id, owner.chu_so_huu_id, owner.ty_le_so_huu],
+          );
+        }
+      }
 
-            // chuyển công trình sang thửa đầu tiên
-            await client.query(`
+      // chuyển công trình sang thửa đầu tiên
+      await client.query(
+        `
             UPDATE cong_trinh
             SET thua_dat_id = $1
             WHERE thua_dat_id = $2
-        `, [
-                created[0].id,
-                thua_dat_id
-            ]);
+        `,
+        [created[0].id, thua_dat_id],
+      );
 
-            // đánh dấu thửa cũ
-            await client.query(`
+      // đánh dấu thửa cũ
+      await client.query(
+        `
             UPDATE thua_dat
             SET
                 deleted_at = NOW(),
                 trang_thai = 'Đã tách'
             WHERE id = $1
-        `, [thua_dat_id]);
+        `,
+        [thua_dat_id],
+      );
 
-            await client.query("COMMIT");
+      await client.query("COMMIT");
 
-            return created;
+      return created;
+    } catch (err) {
+      await client.query("ROLLBACK");
 
-        } catch (err) {
-
-            await client.query("ROLLBACK");
-
-            throw err;
-
-        } finally {
-
-            client.release();
-        }
-    },
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
 };
 
 module.exports = ThuaDatModel;

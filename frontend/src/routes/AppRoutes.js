@@ -8,7 +8,7 @@ import Profile from "../pages/client/profile/Profile";
 import SearchPage from "../pages/client/search/SearchPage";
 import RequestPage from "../pages/client/request/RequestPage";
 import RequestUser from "../pages/client/request/RequestUser";
-import Test from "../pages/client/Test";
+// import Test from "../pages/client/Test";
 
 import Dashboard from "../pages/admin/Dashboard";
 import ThuaDat from "../pages/admin/thuadat/ThuaDat";
@@ -22,6 +22,9 @@ import SystemHistory from "../pages/admin/system-history/SystemHistory";
 import Settings from "../pages/admin/settings/Settings";
 import BanDo from "../pages/admin/bando/BanDo";
 
+import Test from "../pages/admin/Test";
+import Test1 from "../pages/admin/Test1";
+
 export default function AppRoutes() {
   return (
     <BrowserRouter>
@@ -33,7 +36,6 @@ export default function AppRoutes() {
           <Route path="search" element={<SearchPage />} />
           <Route path="request" element={<RequestPage />} />
           <Route path="requestuser" element={<RequestUser />} />
-          <Route path="Test" element={<Test />} />
         </Route>
 
         {/* ADMIN */}
@@ -59,6 +61,10 @@ export default function AppRoutes() {
           <Route path="system-history" element={<SystemHistory />} />
 
           <Route path="settings" element={<Settings />} />
+
+          <Route path="Test" element={<Test />} />
+
+          <Route path="Test1" element={<Test1 />} />
         </Route>
       </Routes>
     </BrowserRouter>

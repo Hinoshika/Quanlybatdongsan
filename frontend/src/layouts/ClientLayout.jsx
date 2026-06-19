@@ -119,7 +119,7 @@ export default function ClientLayout() {
             { key: "", icon: <HomeOutlined />, label: "Trang chủ" },
             { key: "search", icon: <SearchOutlined />, label: "Tra cứu" },
             { key: "request", icon: <FileTextOutlined />, label: "Yêu cầu" },
-            { key: "Test", icon: <FileTextOutlined />, label: "Test" },
+            // { key: "Test", icon: <FileTextOutlined />, label: "Test" },
           ]}
         />
 

@@ -1,237 +1,221 @@
 // src/pages/client/search/MapView.jsx
 
 import { useState } from "react";
-import {
-    Card,
-    Input,
-    Button,
-    Row,
-    Col,
-    message
-} from "antd";
-import { SearchOutlined } from "@ant-design/icons";
+
+import { Card, Input, Button, Row, Col, message } from "antd";
+
+import { SearchOutlined, EnvironmentOutlined } from "@ant-design/icons";
 
 import {
-    MapContainer,
-    TileLayer,
-    GeoJSON
+  MapContainer,
+  TileLayer,
+  GeoJSON,
+  LayersControl,
+  ZoomControl,
 } from "react-leaflet";
 
 import MapClickHandler from "./MapClickHandler";
 import MapController from "./components/MapController";
 
+const { BaseLayer } = LayersControl;
+
 const MapView = ({
-    searchMode,
-    activeMainTab,
-    currentGeoData,
-    searchLandMap,
-    handleSearchCongTrinhMap,
-    handleClick,
-    mapRef
+  searchMode,
+  activeMainTab,
+  currentGeoData,
+  searchLandMap,
+  handleSearchCongTrinhMap,
+  handleClick,
+  mapRef,
 }) => {
+  const [locationText, setLocationText] = useState("");
 
-    const [locationText, setLocationText] =
-        useState("");
+  const handleLocate = async () => {
+    if (!locationText.trim()) {
+      message.warning("Nhập địa chỉ cần tìm");
 
-    const handleLocate = async () => {
+      return;
+    }
 
-        if (!locationText.trim()) {
-            message.warning(
-                "Nhập địa chỉ cần tìm"
-            );
-            return;
-        }
+    try {
+      const keyword = `${locationText}, Việt Nam`;
 
-        try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(keyword)}`,
+      );
 
-            const keyword = `${locationText}, Việt Nam`;
+      const data = await res.json();
 
-            const res = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(keyword)}`
-            );
+      if (!data.length) {
+        message.warning("Không tìm thấy vị trí");
 
-            const data =
-                await res.json();
+        return;
+      }
 
-            console.log(
-                "Nominatim:",
-                data
-            );
-            console.log(data[0].display_name);
+      const lat = Number(data[0].lat);
 
-            if (!data.length) {
-                message.warning(
-                    "Không tìm thấy vị trí"
-                );
-                return;
-            }
+      const lng = Number(data[0].lon);
 
-            const lat =
-                Number(data[0].lat);
+      if (mapRef.current) {
+        mapRef.current.flyTo([lat, lng], 18, {
+          duration: 1.5,
+        });
+      }
 
-            const lng =
-                Number(data[0].lon);
+      message.success("Đã di chuyển tới vị trí");
+    } catch (err) {
+      console.log(err);
 
-            console.log(
-                "MapRef:",
-                mapRef.current
-            );
+      message.error("Lỗi tìm vị trí");
+    }
+  };
 
-            if (!mapRef.current) {
-                message.error(
-                    "Map chưa khởi tạo"
-                );
-                return;
-            }
+  if (searchMode !== "map") return null;
 
-            mapRef.current.flyTo(
-                [lat, lng],
-                18,
-                {
-                    duration: 1.5
-                }
-            );
+  return (
+    <Card
+      className="map-card"
+      style={{
+        marginTop: 20,
+        borderRadius: 16,
+        overflow: "hidden",
+      }}
+      title={<span>🗺️ Bản đồ tìm kiếm thửa đất</span>}
+    >
+      <Row
+        gutter={10}
+        style={{
+          marginBottom: 15,
+        }}
+      >
+        <Col flex="auto">
+          <Input
+            size="large"
+            prefix={<EnvironmentOutlined />}
+            value={locationText}
+            onChange={(e) => setLocationText(e.target.value)}
+            onPressEnter={handleLocate}
+            placeholder="Nhập địa chỉ, số nhà, phường, quận..."
+          />
+        </Col>
 
-            message.success(
-                "Đã chuyển đến vị trí"
-            );
+        <Col>
+          <Button
+            size="large"
+            type="primary"
+            icon={<SearchOutlined />}
+            onClick={handleLocate}
+          >
+            Tìm vị trí
+          </Button>
+        </Col>
+      </Row>
 
-        } catch (error) {
-
-            console.error(error);
-
-            message.error(
-                "Không thể tìm vị trí"
-            );
-        }
-    };
-
-    if (searchMode !== "map")
-        return null;
-
-    return (
-        <Card
-            style={{
-                marginTop: 20
-            }}
-            title="Click vào bản đồ để tìm kiếm"
+      <div
+        style={{
+          height: 600,
+          borderRadius: 14,
+          overflow: "hidden",
+          boxShadow: "0 4px 15px rgba(0,0,0,.15)",
+        }}
+      >
+        <MapContainer
+          ref={mapRef}
+          center={[21.0285, 105.8542]}
+          zoom={13}
+          zoomControl={false}
+          style={{
+            height: "100%",
+            width: "100%",
+          }}
         >
-            <Row
-                gutter={8}
-                style={{
-                    marginBottom: 12
-                }}
-            >
-                <Col flex="auto">
-                    <Input
-                        value={
-                            locationText
-                        }
-                        onChange={(e) =>
-                            setLocationText(
-                                e.target.value
-                            )
-                        }
-                        onPressEnter={
-                            handleLocate
-                        }
-                        placeholder="Nhập địa chỉ hoặc tên địa điểm..."
-                    />
-                </Col>
+          <ZoomControl position="bottomright" />
 
-                <Col>
-                    <Button
-                        type="primary"
-                        icon={
-                            <SearchOutlined />
-                        }
-                        onClick={
-                            handleLocate
-                        }
-                    >
-                        Tìm vị trí
-                    </Button>
-                </Col>
-            </Row>
+          <MapController mapRef={mapRef} />
 
-            <div
-                style={{
-                    height: 560
-                }}
-            >
-                <MapContainer
-                    center={[
-                        21.0285,
-                        105.8542
-                    ]}
-                    zoom={13}
-                    style={{
-                        height: "100%",
-                        width: "100%",
-                        cursor: "crosshair"
-                    }}
-                >
-                    <MapController
-                        mapRef={mapRef}
-                    />
+          <LayersControl position="topright">
+            {/* BẢN ĐỒ THƯỜNG */}
+            <BaseLayer checked name="🗺️ Bản đồ đường phố">
+              <TileLayer
+                url="
+                            https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
+                            "
+              />
+            </BaseLayer>
 
-                    <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
+            {/* VỆ TINH */}
+            <BaseLayer name="🛰️ Ảnh vệ tinh">
+              <TileLayer
+                url="
+                            https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}
+                            "
+              />
+            </BaseLayer>
 
-                    <MapClickHandler
-                        activeMainTab={
-                            activeMainTab
-                        }
-                        searchLandMap={
-                            searchLandMap
-                        }
-                        handleSearchCongTrinhMap={
-                            handleSearchCongTrinhMap
-                        }
-                    />
+            {/* VỆ TINH CÓ NHÃN */}
+            <BaseLayer name="🌍 Vệ tinh + địa danh">
+              <TileLayer
+                url="
+                            https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}
+                            "
+              />
+            </BaseLayer>
+          </LayersControl>
 
-                    {currentGeoData.map(
-                        (item) =>
-                            item.geom && (
-                                <GeoJSON
-                                    key={
-                                        item.id
-                                    }
-                                    data={
-                                        item.geom
-                                    }
-                                    style={{
-                                        color:
-                                            activeMainTab ===
-                                                "thuadat"
-                                                ? "#1890ff"
-                                                : "#ff4d4f",
-                                        weight: 3,
-                                        fillOpacity: 0.25
-                                    }}
-                                    onEachFeature={(
-                                        feature,
-                                        layer
-                                    ) => {
-                                        layer.on(
-                                            "click",
-                                            () => {
-                                                handleClick(
-                                                    item,
-                                                    activeMainTab ===
-                                                    "congtrinh"
-                                                );
-                                            }
-                                        );
-                                    }}
-                                />
-                            )
-                    )}
-                </MapContainer>
-            </div>
-        </Card>
-    );
+          <MapClickHandler
+            activeMainTab={activeMainTab}
+            searchLandMap={searchLandMap}
+            handleSearchCongTrinhMap={handleSearchCongTrinhMap}
+          />
+
+          {currentGeoData.map(
+            (item) =>
+              item.geom && (
+                <GeoJSON
+                  key={item.id}
+                  data={item.geom}
+                  style={() => ({
+                    color: activeMainTab === "thuadat" ? "#0066ff" : "#ff0000",
+
+                    weight: 3,
+
+                    fillColor:
+                      activeMainTab === "thuadat" ? "#1890ff" : "#ff4d4f",
+
+                    fillOpacity: 0.35,
+
+                    dashArray: "5,5",
+                  })}
+                  onEachFeature={(feature, layer) => {
+                    layer.on({
+                      mouseover: () => {
+                        layer.setStyle({
+                          weight: 5,
+
+                          fillOpacity: 0.55,
+                        });
+                      },
+
+                      mouseout: () => {
+                        layer.setStyle({
+                          weight: 3,
+
+                          fillOpacity: 0.35,
+                        });
+                      },
+
+                      click: () => {
+                        handleClick(item, activeMainTab === "congtrinh");
+                      },
+                    });
+                  }}
+                />
+              ),
+          )}
+        </MapContainer>
+      </div>
+    </Card>
+  );
 };
 
 export default MapView;

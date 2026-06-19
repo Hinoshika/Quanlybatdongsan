@@ -1,5 +1,3 @@
-// src/pages/client/map/BanDo.jsx
-
 import { useEffect, useState } from "react";
 
 import {
@@ -9,10 +7,11 @@ import {
   Tag,
   Spin,
   Alert,
-  Divider,
   List,
   Avatar,
-  Empty,
+  Input,
+  Button,
+  message,
 } from "antd";
 
 import { MapContainer, TileLayer, GeoJSON, LayersControl } from "react-leaflet";
@@ -34,6 +33,8 @@ export default function BanDo() {
   const [selected, setSelected] = useState(null);
 
   const [lienKe, setLienKe] = useState(null);
+
+  const [soCccdMoi, setSoCccdMoi] = useState("");
 
   useEffect(() => {
     loadData();
@@ -74,6 +75,71 @@ export default function BanDo() {
       setLienKe(detail);
     } catch (err) {
       console.log(err);
+
+      message.error("Không lấy được dữ liệu");
+    }
+  };
+
+  const reloadDetail = async () => {
+    if (!selected?.id) return;
+
+    const detail = await getThuaDatMapByThuaDat(selected.id);
+
+    setSelected(detail);
+
+    setLienKe(detail);
+  };
+  const themChuSoHuu = async () => {
+    if (!soCccdMoi.trim()) {
+      message.warning("Nhập CCCD");
+
+      return;
+    }
+
+    if (!selected?.id) {
+      message.warning("Chưa chọn thửa đất");
+
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        "http://localhost:5000/api/thua-dat-map",
+
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            thua_dat_id: selected.id,
+
+            so_cccd: soCccdMoi,
+
+            ty_le_so_huu: 100,
+          }),
+        },
+      );
+
+      const result = await res.json();
+
+      console.log("ADD OWNER:", result);
+
+      if (result.success) {
+        message.success("Thêm chủ sở hữu thành công");
+
+        setSoCccdMoi("");
+
+        await reloadDetail();
+      } else {
+        message.error(result.message || "Không thêm được");
+      }
+    } catch (err) {
+      console.log(err);
+
+      message.error("Lỗi server");
     }
   };
 
@@ -329,18 +395,31 @@ export default function BanDo() {
 
               <Descriptions.Item label="Chủ sở hữu" span={2}>
                 {renderChuSoHuu()}
+
+                <div
+                  style={{
+                    marginTop: 20,
+                    display: "flex",
+                    gap: 10,
+                  }}
+                >
+                  <Input
+                    placeholder="Nhập CCCD chủ sở hữu"
+                    value={soCccdMoi}
+                    onChange={(e) => {
+                      setSoCccdMoi(e.target.value);
+                    }}
+                    style={{
+                      width: 300,
+                    }}
+                  />
+
+                  <Button type="primary" onClick={themChuSoHuu}>
+                    + Thêm
+                  </Button>
+                </div>
               </Descriptions.Item>
             </Descriptions>
-
-            <Divider>🧭 Thửa đất liền kề</Divider>
-
-            {renderLienKe("bac", "⬆ Bắc")}
-
-            {renderLienKe("dong", "➡ Đông")}
-
-            {renderLienKe("tay", "⬅ Tây")}
-
-            {renderLienKe("nam", "⬇ Nam")}
           </>
         )}
       </Modal>
